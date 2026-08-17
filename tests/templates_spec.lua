@@ -363,6 +363,34 @@ run_test("custom snippet directory bootstrap creates configured directory", func
   assert_true(mkdir_path == destination, "Expected snippet directory to be created")
 end)
 
+run_test("combined user file bootstrap runs every initializer", function()
+  local calls = {}
+
+  with_stubs({
+    [{ state, "initialize_custom_snippets_dir" }] = function()
+      table.insert(calls, "snippets")
+      return "/tmp/snippets"
+    end,
+    [{ state, "initialize_assignment_template" }] = function(opts)
+      table.insert(calls, "assignment")
+      assert_true(opts.force == true, "Expected force option for assignment template")
+      return "/tmp/assignment.tex"
+    end,
+    [{ state, "initialize_course_metadata" }] = function(opts)
+      table.insert(calls, "courses")
+      assert_true(opts.force == true, "Expected force option for course metadata")
+      return "/tmp/courses.yaml"
+    end,
+  }, function()
+    local result = templates.init_user_files({ force = true })
+    assert_true(result.snippets_dir == "/tmp/snippets", "Expected snippet directory result")
+    assert_true(result.assignment_template == "/tmp/assignment.tex", "Expected assignment result")
+    assert_true(result.course_metadata == "/tmp/courses.yaml", "Expected course metadata result")
+  end)
+
+  assert_true(table.concat(calls, ",") == "snippets,assignment,courses", "Expected every initializer to run")
+end)
+
 run_test("course metadata bootstrap writes starter file to user config", function()
   local destination = "/tmp/nvim-config/latex-tools/courses.yaml"
   local wrote_lines = nil

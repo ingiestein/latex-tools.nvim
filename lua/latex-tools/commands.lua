@@ -33,6 +33,10 @@ function M.setup()
     require("latex-tools").init_custom_snippets_dir()
   end, { desc = "Create the custom LaTeX snippet directory" })
 
+  vim.api.nvim_create_user_command("LatexToolsInit", function(opts)
+    require("latex-tools").init_user_files({ force = opts.bang })
+  end, { bang = true, desc = "Initialize user LaTeX tools files and directories" })
+
   vim.api.nvim_create_user_command("LatexToolsFigure", function()
     require("latex-tools").insert_figure_snippet()
   end, { desc = "Insert figure with picker" })

@@ -92,6 +92,15 @@ function M.init_custom_snippets_dir()
   return require("latex-tools.state").initialize_custom_snippets_dir()
 end
 
+function M.init_user_files(opts)
+  local options = opts or {}
+  return {
+    snippets_dir = M.init_custom_snippets_dir(),
+    assignment_template = M.init_assignment_template(options),
+    course_metadata = M.init_course_metadata(options),
+  }
+end
+
 function M.run_tests()
   return tests.run_tests()
 end
