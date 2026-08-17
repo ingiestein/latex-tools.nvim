@@ -12,6 +12,7 @@ local defaults = {
     template_dir = nil,
     yaml_path = nil,
     tex_template_path = nil,
+    custom_snippets_dir = nil,
     python_script_path = nil,
     test_script_path = nil,
   },

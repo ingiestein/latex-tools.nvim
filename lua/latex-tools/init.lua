@@ -4,6 +4,7 @@ local figures = require("latex-tools.figures")
 local tables = require("latex-tools.tables")
 local references = require("latex-tools.references")
 local assignment = require("latex-tools.assignment")
+local tex_snippets = require("latex-tools.tex_snippets")
 local tests = require("latex-tools.tests")
 local util = require("latex-tools.util")
 
@@ -32,6 +33,10 @@ end
 
 function M.insert_snippet(snippet_key)
   return snippets.insert_snippet(snippet_key)
+end
+
+function M.insert_custom_snippet()
+  return tex_snippets.insert_custom_snippet()
 end
 
 function M.insert_figure_snippet()

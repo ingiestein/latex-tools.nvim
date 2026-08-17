@@ -18,6 +18,10 @@ function M.setup(opts)
     require("latex-tools").insert_assignment_template()
   end, "Assignment Template Picker")
 
+  map(prefix .. "x", function()
+    vim.cmd("LatexToolsSnippet")
+  end, "Custom LaTeX Snippet Picker")
+
   map(prefix .. "f", function()
     require("latex-tools").insert_figure_snippet()
   end, "Insert Figure (Picker + Caption)")
@@ -71,6 +75,7 @@ function M.setup(opts)
     which_key.add({
       { prefix, desc = "Templates" },
       { prefix .. "a", desc = "Assignment Template Picker" },
+      { prefix .. "x", desc = "Custom LaTeX Snippet Picker" },
       { prefix .. "f", desc = "Figure (Picker + Caption)" },
       { prefix .. "F", desc = "Figure (Placeholder)" },
       { prefix .. "b", desc = "Table (Interactive)" },

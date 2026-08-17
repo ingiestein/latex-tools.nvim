@@ -17,6 +17,10 @@ function M.setup()
     require("latex-tools").insert_assignment_template()
   end, { desc = "Insert assignment template" })
 
+  vim.api.nvim_create_user_command("LatexToolsSnippet", function()
+    require("latex-tools").insert_custom_snippet()
+  end, { desc = "Insert a custom LaTeX snippet" })
+
   vim.api.nvim_create_user_command("LatexToolsInitCourses", function(opts)
     require("latex-tools").init_course_metadata({ force = opts.bang })
   end, { bang = true, desc = "Create user course metadata from the bundled template" })

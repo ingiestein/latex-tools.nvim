@@ -232,6 +232,34 @@ run_test("BibTeX key helper inserts selected citation", function()
   assert_true(line == "Prior work\\cite{smith2024}", "BibTeX key helper did not insert citation")
 end)
 
+run_test("custom snippet picker inserts selected file", function()
+  new_buffer()
+
+  local tmp = vim.fn.tempname()
+  vim.fn.mkdir(tmp .. "/nested", "p")
+  vim.fn.writefile({ "\\section{Reusable}" }, tmp .. "/section.tex")
+  vim.fn.writefile({ "\\textbf{Nested}" }, tmp .. "/nested/text.tex")
+
+  templates.setup({
+    keymaps = { enable = false },
+    commands = { enable = false },
+    paths = { custom_snippets_dir = tmp },
+  })
+
+  with_stubs({
+    [{ vim.ui, "select" }] = function(items, options, on_choice)
+      assert_true(#items == 2, "Expected two custom snippets")
+      assert_true(options.format_item(items[2]) == "section.tex", "Expected relative snippet labels")
+      on_choice(items[2])
+    end,
+  }, function()
+    templates.insert_custom_snippet()
+  end)
+
+  templates.setup({ keymaps = { enable = false }, commands = { enable = false } })
+  assert_contains(get_buffer_lines(), "\\section{Reusable}")
+end)
+
 run_test("CSV helper converts selected file into a table", function()
   new_buffer()
 

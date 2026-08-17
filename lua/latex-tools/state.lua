@@ -17,6 +17,10 @@ local function user_template_path()
   return user_config_dir() .. "/assignment.tex"
 end
 
+local function user_custom_snippets_dir()
+  return user_config_dir() .. "/snippets"
+end
+
 local function is_readable(path)
   return vim.fn.filereadable(path) == 1
 end
@@ -61,6 +65,7 @@ local function default_paths()
     template_dir = template_dir,
     yaml_path = is_readable(preferred_yaml_path) and preferred_yaml_path or bundled_yaml_path,
     tex_template_path = is_readable(preferred_template_path) and preferred_template_path or bundled_template_path,
+    custom_snippets_dir = user_custom_snippets_dir(),
     python_script_path = root .. "/python/render_template.py",
     test_script_path = root .. "/tests/templates_spec.lua",
   }

@@ -2,7 +2,7 @@
 
 Local Neovim plugin for reusable LaTeX authoring workflows.
 
-Course metadata and the assignment template are best treated as user config, not plugin code. The plugin now prefers user-local files at `vim.fn.stdpath("config") .. "/latex-tools/courses.yaml"` and `vim.fn.stdpath("config") .. "/latex-tools/assignment.tex"`, and falls back to the bundled samples in `templates/` when those files do not exist.
+Course metadata, the assignment template, and reusable snippets are best treated as user config, not plugin code. The plugin reads custom snippets from `vim.fn.stdpath("config") .. "/latex-tools/snippets"`.
 
 Personal information belongs in the user-local `courses.yaml`, under `academic_profile`. The committed `templates/assignment.tex` file contains only generic placeholder values. Course-specific information belongs under `course_catalog`; assignment title and due date are entered when generating an assignment.
 
@@ -14,6 +14,7 @@ Personal information belongs in the user-local `courses.yaml`, under `academic_p
 - Label/reference picker (ref/pageref/autoref)
 - BibTeX key picker (cite/citep/citet)
 - CSV-to-LaTeX table generation
+- Custom `.tex` snippet picker and cursor insertion
 - Headless regression test runner
 
 ## Setup (LazyVim)
@@ -37,6 +38,7 @@ return {
         -- template_dir = vim.fn.expand("~/.config/latex-templates"),
         -- yaml_path = vim.fn.expand("~/.config/nvim/latex-tools/courses.yaml"),
         -- tex_template_path = vim.fn.expand("~/.config/nvim/latex-tools/assignment.tex"),
+        -- custom_snippets_dir = vim.fn.expand("~/.config/nvim/latex-tools/snippets"),
         -- python_script_path = vim.fn.expand("~/.config/latex-templates/render_template.py"),
         -- test_script_path = vim.fn.expand("~/.config/nvim/tests/templates_spec.lua"),
       },
@@ -72,6 +74,7 @@ return {
 - `paths.template_dir` (string|nil): optional directory override for template assets.
 - `paths.yaml_path` (string|nil): optional override for course metadata YAML.
 - `paths.tex_template_path` (string|nil): optional override for assignment template path.
+- `paths.custom_snippets_dir` (string|nil): optional override for the directory of user `.tex` snippets.
 - `paths.python_script_path` (string|nil): optional override for renderer script path.
 - `paths.test_script_path` (string|nil): optional override for test suite path.
 - `python_cmd` (string|nil): optional Python executable override.
@@ -90,12 +93,15 @@ For the assignment template, the default lookup order is:
 
 That makes `~/.config/nvim/latex-tools/courses.yaml` and `~/.config/nvim/latex-tools/assignment.tex` the recommended locations on macOS and Linux. `stdpath("data")` is better suited for generated or cached files; these are user-authored files and should live with config.
 
+Custom snippets are read recursively from `vim.fn.stdpath("config") .. "/latex-tools/snippets"`. Put any reusable `.tex` block there; the picker displays its path relative to that directory and inserts its full contents at the cursor.
+
 ## Commands
 
 - `:LatexToolsTest`
 - `:LatexToolsInitCourses`
 - `:LatexToolsInitAssignment`
 - `:LatexToolsAssignment`
+- `:LatexToolsSnippet`
 - `:LatexToolsFigure`
 - `:LatexToolsFigurePlaceholder`
 - `:LatexToolsTable`
@@ -112,6 +118,7 @@ That makes `~/.config/nvim/latex-tools/courses.yaml` and `~/.config/nvim/latex-t
 - `require("latex-tools").init_course_metadata(opts)`
 - `require("latex-tools").init_assignment_template(opts)`
 - `require("latex-tools").insert_assignment_template()`
+- `require("latex-tools").insert_custom_snippet()`
 - `require("latex-tools").insert_figure_snippet()`
 - `require("latex-tools").insert_basic_figure_snippet()`
 - `require("latex-tools").insert_table_snippet()`
@@ -128,6 +135,7 @@ That makes `~/.config/nvim/latex-tools/courses.yaml` and `~/.config/nvim/latex-t
 Prefix defaults to `\\t`.
 
 - `\\ta` assignment template picker
+- `\\tx` custom `.tex` snippet picker
 - `\\tf` figure picker
 - `\\tF` placeholder figure
 - `\\tb` interactive table
@@ -150,6 +158,7 @@ Prefix defaults to `\\t`.
   - `local-plugins/latex-tools.nvim/tests/templates_spec.lua`
 - Use `:LatexToolsInitCourses` to copy the bundled course metadata sample to your user config directory. Add `!` to overwrite an existing file.
 - Use `:LatexToolsInitAssignment` to copy the bundled assignment template to your user config directory. Add `!` to overwrite an existing file.
+- Add reusable `.tex` files under `~/.config/nvim/latex-tools/snippets/`, including nested folders when useful. Use `:LatexToolsSnippet` or `\\tx` to select and insert one.
 - Python rendering uses `vim.g.python3_host_prog` when set, otherwise `python3`.
 
 ## Testing
