@@ -1,0 +1,212 @@
+\documentclass[12pt,letterpaper]{article}
+
+% -----------------------------
+% Core packages
+% -----------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{listings}
+
+% -----------------------------
+% Page setup
+% -----------------------------
+\geometry{margin=1in}
+\setstretch{1.15}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\setcounter{secnumdepth}{0}
+
+% -----------------------------
+% Metadata fields are populated from the user's course YAML and assignment prompts.
+% -----------------------------
+\newcommand{\StudentName}{Student Name}
+\newcommand{\StudentID}{Student ID}
+\newcommand{\DegreeProgram}{Program Name}
+\newcommand{\Term}{Term}
+\newcommand{\Year}{2026}
+\newcommand{\CourseCode}{COURSE 0000-000}
+\newcommand{\CourseTitle}{Course Title}
+\newcommand{\CourseSection}{0000}
+\newcommand{\InstructorName}{Instructor Name}
+\newcommand{\AssignmentTitle}{Assignment Title}
+\newcommand{\DueDate}{YYYY-MM-DD}
+
+% -----------------------------
+% Header and footer
+% -----------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\Term\ \Year\ --- \CourseCode\ (\CourseSection) --- \CourseTitle}
+\fancyhead[R]{\StudentName\ \StudentID}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{15pt}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% The first page keeps the footer but omits the running header.
+\fancypagestyle{firstpage}{
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+}
+
+% -----------------------------
+% Hyperref colors
+% -----------------------------
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue!60!black,
+	citecolor=teal!60!black,
+	urlcolor=blue!60!black
+}
+
+% -----------------------------
+% Listings styles (Python, R, SQL)
+% -----------------------------
+\lstdefinestyle{latextoolsbase}{
+	basicstyle=\ttfamily\small,
+	backgroundcolor=\color{gray!8},
+	frame=single,
+	rulecolor=\color{gray!45},
+	numbers=left,
+	numberstyle=\tiny\color{gray!70},
+	stepnumber=1,
+	numbersep=8pt,
+	showstringspaces=false,
+	breaklines=true,
+	tabsize=2,
+	captionpos=b
+}
+
+\lstdefinestyle{latextoolspython}{
+	style=latextoolsbase,
+	language=Python,
+	keywordstyle=\color{blue!70!black}\bfseries,
+	stringstyle=\color{green!35!black},
+	commentstyle=\color{gray!75!black}\itshape
+}
+
+\lstdefinestyle{latextoolsr}{
+	style=latextoolsbase,
+	language=R,
+	keywordstyle=\color{purple!65!black}\bfseries,
+	stringstyle=\color{green!30!black},
+	commentstyle=\color{gray!75!black}\itshape
+}
+
+\lstdefinestyle{latextoolssql}{
+	style=latextoolsbase,
+	language=SQL,
+	keywordstyle=\color{orange!80!black}\bfseries,
+	stringstyle=\color{green!30!black},
+	commentstyle=\color{gray!75!black}\itshape
+}
+
+\begin{document}
+\thispagestyle{firstpage}
+
+\begin{center}
+	\hrule
+	\vspace{0.4cm}
+	{\large\textbf{\CourseCode\ --- \CourseTitle}}
+\end{center}
+\textbf{Name:} \StudentName\hfill\textbf{Due Date:} \DueDate\\
+\textbf{Student Number:} \StudentID\hfill\textbf{Assignment:} \AssignmentTitle\\
+\hrule
+
+\vspace{0.6em}
+\vspace{0.4em}
+
+% -----------------------------
+% Primary paper sections
+% -----------------------------
+\section{Introduction}
+
+\section{Methods or Approach}
+
+\section{Results or Findings}
+
+\section{Discussion}
+
+\section{Conclusion}
+
+\section{References}
+% Use your preferred citation workflow here (manual or BibTeX/Biber).
+
+% ============================================================
+% Snippet Library (copy blocks as needed while writing)
+% ============================================================
+
+% Figure snippet
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.85\linewidth]{figures/figure-file-name}
+%   \caption{Short, descriptive caption.}
+%   \label{fig:meaningful-label}
+% \end{figure}
+
+% Table snippet (booktabs)
+% \begin{table}[htbp]
+%   \centering
+%   \caption{Comparison of methods and outcomes.}
+%   \label{tab:comparison}
+%   \begin{tabular}{p{0.28\linewidth}p{0.28\linewidth}p{0.28\linewidth}}
+%     \toprule
+%     Column A & Column B & Column C \\
+%     \midrule
+%     Value 1 & Value 2 & Value 3 \\
+%     Value 4 & Value 5 & Value 6 \\
+%     \bottomrule
+%   \end{tabular}
+% \end{table}
+
+% Formatted footnote snippet
+% Example sentence with context\footnote{Author Lastname, "Resource Title," Source, Year, URL (accessed YYYY-MM-DD).}.
+
+% Python code snippet
+% \begin{lstlisting}[style=latextoolspython,caption={Model training loop},label={lst:python-model}]
+% import pandas as pd
+% from sklearn.model_selection import train_test_split
+% \end{lstlisting}
+
+% R code snippet
+% \begin{lstlisting}[style=latextoolsr,caption={Basic R summary},label={lst:r-summary}]
+% summary(df)
+% \end{lstlisting}
+
+% SQL code snippet
+% \begin{lstlisting}[style=latextoolssql,caption={Cohort extraction query},label={lst:sql-cohort}]
+% SELECT patient_id, encounter_date
+% FROM encounters
+% WHERE diagnosis_code = 'I10';
+% \end{lstlisting}
+
+% Standards comparison matrix snippet (FHIR/SNOMED/other)
+% \begin{longtable}{p{0.22\linewidth}p{0.22\linewidth}p{0.22\linewidth}p{0.22\linewidth}}
+% \caption{Standards comparison matrix}\label{tab:standards-matrix}\\
+% \toprule
+% Domain & FHIR & SNOMED CT & Notes \\
+% \midrule
+% \endfirsthead
+% \toprule
+% Domain & FHIR & SNOMED CT & Notes \\
+% \midrule
+% \endhead
+% Interoperability & Resource-level model & Clinical terminology & Add implementation constraints \\
+% Terminology binding & ValueSet bindings & Concept hierarchies & Map local concepts \\
+% \bottomrule
+% \end{longtable}
+
+\end{document}

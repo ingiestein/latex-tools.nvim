@@ -1,0 +1,58 @@
+academic_profile:
+  institution: Example University
+  degree_program: Example Graduate Program
+  student_name: Jane Student
+  student_id: "00000000"
+  default_term: Autumn
+  default_year: 2026
+
+course_catalog:
+  - key: course_applied_methods
+    course_code: COURSE 6101-001
+    class_number: "10001"
+    course_title: Applied Research Methods
+    course_type: Lecture
+    meeting_time: MoWe 10:00AM - 11:30AM
+    location: Building A 101
+    instructors:
+      - A. Instructor
+    credits: 3.00
+
+  - key: course_ai_practice
+    course_code: COURSE 6205-001
+    class_number: "10002"
+    course_title: Applied AI Practice
+    course_type: Lecture
+    meeting_time: Th 2:00PM - 3:30PM
+    location: Building B 204
+    instructors:
+      - B. Faculty
+      - C. Faculty
+    credits: 1.00
+
+  - key: course_professional_seminar
+    course_code: COURSE 6800-001
+    class_number: "10003"
+    course_title: Professional Seminar
+    course_type: Seminar
+    meeting_time: Fri 12:00PM - 1:00PM
+    location: Seminar Room
+    instructors:
+      - D. Speaker
+    credits: 0.50
+
+  - key: course_data_storytelling
+    course_code: COURSE 6400-090
+    class_number: "10004"
+    course_title: Data Storytelling
+    course_type: Lecture
+    meeting_time: Online
+    location: Online
+    instructors:
+      - E. Lecturer
+    credits: 1.50
+
+selection:
+  active_course_key: course_applied_methods
+  active_assignment_title: Assignment Title
+  active_due_date: 2026-08-15

@@ -1,0 +1,51 @@
+.DS_Store
+
+# Neovim and editor temporary files
+*.swp
+*.swo
+*.swn
+*~
+
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# Local configuration and secrets
+.env
+.env.*
+
+# Coverage and test output
+.coverage
+coverage.xml
+htmlcov/
+
+# LaTeX auxiliary and generated output
+*.acn
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.ist
+*.lof
+*.lot
+*.nav
+*.out
+*.pdf
+*.run.xml
+*.snm
+*.synctex
+*.synctex.gz
+*.toc
+*.vrb
+*.aux
+*.log
