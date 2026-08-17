@@ -338,6 +338,31 @@ run_test("state prefers user config assignment template when present", function(
   end)
 end)
 
+run_test("custom snippet directory bootstrap creates configured directory", function()
+  local destination = "/tmp/nvim-config/latex-tools/snippets"
+  local mkdir_path = nil
+
+  templates.setup({
+    keymaps = { enable = false },
+    commands = { enable = false },
+    paths = { custom_snippets_dir = destination },
+  })
+
+  with_stubs({
+    [{ vim.fn, "mkdir" }] = function(path, flag)
+      mkdir_path = path
+      assert_true(flag == "p", "Expected mkdir -p semantics")
+      return 1
+    end,
+  }, function()
+    local result = templates.init_custom_snippets_dir()
+    assert_true(result == destination, "Expected configured snippet directory")
+  end)
+
+  templates.setup({ keymaps = { enable = false }, commands = { enable = false } })
+  assert_true(mkdir_path == destination, "Expected snippet directory to be created")
+end)
+
 run_test("course metadata bootstrap writes starter file to user config", function()
   local destination = "/tmp/nvim-config/latex-tools/courses.yaml"
   local wrote_lines = nil

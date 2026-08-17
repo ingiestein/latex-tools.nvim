@@ -88,6 +88,10 @@ function M.init_assignment_template(opts)
   return require("latex-tools.state").initialize_assignment_template(opts)
 end
 
+function M.init_custom_snippets_dir()
+  return require("latex-tools.state").initialize_custom_snippets_dir()
+end
+
 function M.run_tests()
   return tests.run_tests()
 end

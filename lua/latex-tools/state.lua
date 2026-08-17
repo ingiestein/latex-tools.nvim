@@ -139,6 +139,18 @@ function M.initialize_assignment_template(opts)
   })
 end
 
+function M.initialize_custom_snippets_dir()
+  local directory = M.get_paths().custom_snippets_dir
+  local ok, result = pcall(vim.fn.mkdir, directory, "p")
+  if not ok or result == 0 then
+    vim.notify("Unable to create custom snippet directory at " .. directory, vim.log.levels.ERROR)
+    return nil
+  end
+
+  vim.notify("Custom snippet directory ready at " .. directory, vim.log.levels.INFO)
+  return directory
+end
+
 function M.run_command(argv)
   local output = vim.fn.system(argv)
   local exit_code = vim.v.shell_error

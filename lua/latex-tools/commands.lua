@@ -29,6 +29,10 @@ function M.setup()
     require("latex-tools").init_assignment_template({ force = opts.bang })
   end, { bang = true, desc = "Create a user assignment template from the bundled template" })
 
+  vim.api.nvim_create_user_command("LatexToolsInitSnippets", function()
+    require("latex-tools").init_custom_snippets_dir()
+  end, { desc = "Create the custom LaTeX snippet directory" })
+
   vim.api.nvim_create_user_command("LatexToolsFigure", function()
     require("latex-tools").insert_figure_snippet()
   end, { desc = "Insert figure with picker" })

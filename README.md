@@ -100,6 +100,7 @@ Custom snippets are read recursively from `vim.fn.stdpath("config") .. "/latex-t
 - `:LatexToolsTest`
 - `:LatexToolsInitCourses`
 - `:LatexToolsInitAssignment`
+- `:LatexToolsInitSnippets`
 - `:LatexToolsAssignment`
 - `:LatexToolsSnippet`
 - `:LatexToolsFigure`
@@ -117,6 +118,7 @@ Custom snippets are read recursively from `vim.fn.stdpath("config") .. "/latex-t
 - `require("latex-tools").get_config()`
 - `require("latex-tools").init_course_metadata(opts)`
 - `require("latex-tools").init_assignment_template(opts)`
+- `require("latex-tools").init_custom_snippets_dir()`
 - `require("latex-tools").insert_assignment_template()`
 - `require("latex-tools").insert_custom_snippet()`
 - `require("latex-tools").insert_figure_snippet()`
@@ -158,6 +160,7 @@ Prefix defaults to `\\t`.
   - `local-plugins/latex-tools.nvim/tests/templates_spec.lua`
 - Use `:LatexToolsInitCourses` to copy the bundled course metadata sample to your user config directory. Add `!` to overwrite an existing file.
 - Use `:LatexToolsInitAssignment` to copy the bundled assignment template to your user config directory. Add `!` to overwrite an existing file.
+- Use `:LatexToolsInitSnippets` to create the custom snippet directory before adding your `.tex` files.
 - Add reusable `.tex` files under `~/.config/nvim/latex-tools/snippets/`, including nested folders when useful. Use `:LatexToolsSnippet` or `\\tx` to select and insert one.
 - Python rendering uses `vim.g.python3_host_prog` when set, otherwise `python3`.
 
