@@ -1,10 +1,10 @@
 # latex-tools.nvim
 
-Local Neovim plugin for reusable LaTeX authoring workflows.
+Handy LaTeX helpers for Neovim: assignment files, figures, tables, references, citations, and your own reusable snippets.
 
-Course metadata, the assignment template, and reusable snippets are best treated as user config, not plugin code. The plugin reads custom snippets from `vim.fn.stdpath("config") .. "/latex-tools/snippets"`.
+Your course details, assignment template, and reusable snippets live in your Neovim config, not in the plugin. Custom snippets go in `vim.fn.stdpath("config") .. "/latex-tools/snippets"`.
 
-Personal information belongs in the user-local `courses.yaml`, under `academic_profile`. The committed `templates/assignment.tex` file contains only generic placeholder values. Course-specific information belongs under `course_catalog`; assignment title and due date are entered when generating an assignment.
+Put personal details in `courses.yaml` under `academic_profile`, and add courses under `course_catalog`. The included assignment template uses generic placeholders; you choose the assignment title and due date when you create a document.
 
 ## Features
 
@@ -17,19 +17,14 @@ Personal information belongs in the user-local `courses.yaml`, under `academic_p
 - Custom `.tex` snippet picker and cursor insertion
 - Headless regression test runner
 
-## Setup (LazyVim)
+## Install with LazyVim
 
-This workspace already registers the plugin in:
-
-- `lua/plugins/latex-tools.lua`
-
-Configuration example:
+Add this to a file such as `lua/plugins/latex-tools.lua` in your LazyVim config. It installs [latex-tools.nvim](https://github.com/ingiestein/latex-tools.nvim) from GitHub:
 
 ```lua
 return {
   {
-    dir = vim.fn.stdpath("config") .. "/local-plugins/latex-tools.nvim",
-    name = "latex-tools.nvim",
+    "ingiestein/latex-tools.nvim",
     opts = {
       keymaps = { enable = true, prefix = "\\t" },
       commands = { enable = true },
@@ -52,19 +47,7 @@ return {
 }
 ```
 
-If the plugin lives outside your Neovim config directory, do not call `vim.fn.stdpath("~")`. Use `vim.fn.expand("~/...")` instead:
-
-```lua
-return {
-  {
-    dir = vim.fn.expand("~/Documents/GitHub/latex-tools.nvim"),
-    name = "latex-tools.nvim",
-    config = function(_, opts)
-      require("latex-tools").setup(opts)
-    end,
-  },
-}
-```
+Restart Neovim and run `:Lazy sync`, then run `:LatexToolsInit` to create your starter files and snippets folder.
 
 ## Setup Options
 
@@ -79,7 +62,7 @@ return {
 - `paths.test_script_path` (string|nil): optional override for test suite path.
 - `python_cmd` (string|nil): optional Python executable override.
 
-When specific path overrides are omitted, plugin-local defaults are used.
+Leave the path options alone unless you want your files somewhere else.
 
 For course metadata, the default lookup order is:
 
@@ -91,7 +74,7 @@ For the assignment template, the default lookup order is:
 - `vim.fn.stdpath("config") .. "/latex-tools/assignment.tex"`
 - bundled fallback at `templates/assignment.tex`
 
-That makes `~/.config/nvim/latex-tools/courses.yaml` and `~/.config/nvim/latex-tools/assignment.tex` the recommended locations on macOS and Linux. `stdpath("data")` is better suited for generated or cached files; these are user-authored files and should live with config.
+On macOS and Linux, `~/.config/nvim/latex-tools/courses.yaml` and `~/.config/nvim/latex-tools/assignment.tex` are good default locations. These are files you edit, so keeping them with your config is usually the least surprising option.
 
 Custom snippets are read recursively from `vim.fn.stdpath("config") .. "/latex-tools/snippets"`. Put any reusable `.tex` block there; the picker displays its path relative to that directory and inserts its full contents at the cursor.
 
@@ -153,19 +136,14 @@ Prefix defaults to `\\t`.
 - `\\ts` SQL snippet
 - `\\tT` run tests
 
-## Notes
+## Getting Started
 
-- By default, assets are plugin-local:
-  - `local-plugins/latex-tools.nvim/templates/courses.yaml`
-  - `local-plugins/latex-tools.nvim/templates/assignment.tex`
-  - `local-plugins/latex-tools.nvim/python/render_template.py`
-  - `local-plugins/latex-tools.nvim/tests/templates_spec.lua`
-- Use `:LatexToolsInitCourses` to copy the bundled course metadata sample to your user config directory. Add `!` to overwrite an existing file.
-- Use `:LatexToolsInitAssignment` to copy the bundled assignment template to your user config directory. Add `!` to overwrite an existing file.
-- Use `:LatexToolsInitSnippets` to create the custom snippet directory before adding your `.tex` files.
-- Use `:LatexToolsInit` to initialize courses, the assignment template, and the snippet directory together. Add `!` to overwrite the bundled course and assignment starter files.
-- Add reusable `.tex` files under `~/.config/nvim/latex-tools/snippets/`, including nested folders when useful. Use `:LatexToolsSnippet` or `\\tx` to select and insert one.
-- Python rendering uses `vim.g.python3_host_prog` when set, otherwise `python3`.
+1. Run `:LatexToolsInit` to create `courses.yaml`, `assignment.tex`, and the snippets folder.
+2. Edit the new `courses.yaml` with your course and profile details.
+3. Add reusable `.tex` files under `~/.config/nvim/latex-tools/snippets/`. Nested folders are fine.
+4. Use `:LatexToolsSnippet` or `\\tx` to choose a snippet and insert it at the cursor.
+
+Run `:LatexToolsInit!` when you want to replace the bundled course and assignment starter files. It never removes your snippets. Python rendering uses `vim.g.python3_host_prog` when set, otherwise `python3`.
 
 ## Testing
 
@@ -182,22 +160,6 @@ nvim --headless -u NONE -l tests/templates_spec.lua
 ## Changelog
 
 - See `CHANGELOG.md` for migration and release milestones.
-
-## Standalone Repo Extraction
-
-To split this local plugin into its own repository:
-
-1. Create a new GitHub repo (for example `latex-tools.nvim`).
-2. Copy the entire contents of this directory into that repo root.
-3. Ensure the following remain at repo root:
-  - `lua/latex-tools/*`
-  - `templates/*`
-  - `python/render_template.py`
-  - `tests/templates_spec.lua`
-  - `.github/workflows/ci.yml`
-  - `.github/workflows/release.yml`
-4. Push and tag a release, for example `v0.2.0`.
-5. Update your Neovim plugin spec from local `dir = ...` to GitHub `"owner/latex-tools.nvim"`.
 
 ## Versioning
 
