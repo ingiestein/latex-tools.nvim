@@ -182,7 +182,7 @@ Available options:
 
 ## Default Keymaps
 
-Prefix defaults to `\\t`.
+Prefix defaults to `\t`.
 
 - `\ta`: assignment template picker
 - `\tx`: custom `.tex` snippet picker
