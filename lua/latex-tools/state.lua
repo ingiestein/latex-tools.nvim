@@ -1,3 +1,5 @@
+local util = require("latex-tools.util")
+
 local M = {}
 
 local function plugin_root()
@@ -11,6 +13,10 @@ end
 
 local function user_yaml_path()
   return user_config_dir() .. "/courses.yaml"
+end
+
+local function user_templates_dir()
+  return user_config_dir() .. "/templates"
 end
 
 local function user_template_path()
@@ -32,26 +38,44 @@ local function copy_bundled_file(opts)
   local label = options.label or "File"
 
   if is_readable(destination) and not options.force then
-    vim.notify(label .. " already exists at " .. destination, vim.log.levels.WARN)
-    return destination
+    if not options.quiet then
+      vim.notify(label .. " already exists at " .. destination, vim.log.levels.WARN)
+    end
+    return destination, "skipped"
   end
 
   local ok, lines = pcall(vim.fn.readfile, source)
   if not ok then
-    vim.notify("Unable to read bundled " .. label:lower(), vim.log.levels.ERROR)
-    return nil
+    if not options.quiet then
+      vim.notify("Unable to read bundled " .. label:lower(), vim.log.levels.ERROR)
+    end
+    return nil, "failed"
   end
 
   vim.fn.mkdir(vim.fn.fnamemodify(destination, ":h"), "p")
 
   local write_ok, write_result = pcall(vim.fn.writefile, lines, destination)
   if not write_ok or write_result ~= 0 then
-    vim.notify("Unable to write " .. label:lower() .. " to " .. destination, vim.log.levels.ERROR)
-    return nil
+    if not options.quiet then
+      vim.notify("Unable to write " .. label:lower() .. " to " .. destination, vim.log.levels.ERROR)
+    end
+    return nil, "failed"
   end
 
-  vim.notify("Created " .. label:lower() .. " at " .. destination, vim.log.levels.INFO)
-  return destination
+  if not options.quiet then
+    vim.notify("Created " .. label:lower() .. " at " .. destination, vim.log.levels.INFO)
+  end
+  return destination, "created"
+end
+
+local function resolve_assignment_template_path(bundled_template_path, preferred_template_path, legacy_template_path)
+  if is_readable(preferred_template_path) then
+    return preferred_template_path
+  end
+  if is_readable(legacy_template_path) then
+    return legacy_template_path
+  end
+  return bundled_template_path
 end
 
 local function default_paths()
@@ -60,11 +84,17 @@ local function default_paths()
   local bundled_yaml_path = template_dir .. "/courses.yaml"
   local preferred_yaml_path = user_yaml_path()
   local bundled_template_path = template_dir .. "/assignment.tex"
-  local preferred_template_path = user_template_path()
+  local preferred_template_path = user_templates_dir() .. "/assignment.tex"
+  local legacy_template_path = user_template_path()
   return {
     template_dir = template_dir,
+    user_templates_dir = user_templates_dir(),
     yaml_path = is_readable(preferred_yaml_path) and preferred_yaml_path or bundled_yaml_path,
-    tex_template_path = is_readable(preferred_template_path) and preferred_template_path or bundled_template_path,
+    tex_template_path = resolve_assignment_template_path(
+      bundled_template_path,
+      preferred_template_path,
+      legacy_template_path
+    ),
     custom_snippets_dir = user_custom_snippets_dir(),
     python_script_path = root .. "/python/render_template.py",
     test_script_path = root .. "/tests/templates_spec.lua",
@@ -100,7 +130,72 @@ function M.get_user_yaml_path()
 end
 
 function M.get_user_template_path()
-  return user_template_path()
+  return user_templates_dir() .. "/assignment.tex"
+end
+
+function M.get_user_templates_dir()
+  return user_templates_dir()
+end
+
+function M.initialize_user_templates(opts)
+  local options = opts or {}
+  local paths = M.get_paths()
+  local bundled_dir = default_paths().template_dir
+  local destination_dir = paths.user_templates_dir
+  local bundled_files = vim.fn.glob(bundled_dir .. "/*.tex", false, true)
+
+  if #bundled_files == 0 then
+    vim.notify("No bundled templates found in " .. bundled_dir, vim.log.levels.WARN)
+    return nil
+  end
+
+  vim.fn.mkdir(destination_dir, "p")
+  local copied = {}
+  local created = 0
+  local skipped = 0
+  local failed = 0
+
+  for _, source in ipairs(bundled_files) do
+    local name = vim.fn.fnamemodify(source, ":t")
+    local destination = destination_dir .. "/" .. name
+    local result, status = copy_bundled_file({
+      source = source,
+      destination = destination,
+      force = options.force,
+      label = name,
+      quiet = true,
+    })
+    if result then
+      table.insert(copied, result)
+    end
+    if status == "created" then
+      created = created + 1
+    elseif status == "skipped" then
+      skipped = skipped + 1
+    else
+      failed = failed + 1
+    end
+  end
+
+  if created > 0 then
+    vim.notify(
+      string.format("Created %d template(s) in %s", created, destination_dir),
+      vim.log.levels.INFO
+    )
+  elseif skipped > 0 and failed == 0 then
+    vim.notify(
+      "Templates already exist in " .. destination_dir .. ". Use :LatexToolsInitTemplates! to overwrite.",
+      vim.log.levels.WARN
+    )
+  elseif failed > 0 then
+    vim.notify("Unable to initialize one or more templates in " .. destination_dir, vim.log.levels.ERROR)
+  end
+
+  return copied
+end
+
+function M.initialize_assignment_template(opts)
+  return M.initialize_user_templates(opts)
 end
 
 function M.initialize_course_metadata(opts)
@@ -121,24 +216,6 @@ function M.initialize_course_metadata(opts)
   })
 end
 
-function M.initialize_assignment_template(opts)
-  local options = opts or {}
-  local paths = M.get_paths()
-  local destination = options.destination or paths.tex_template_path
-  local bundled_template_path = default_paths().template_dir .. "/assignment.tex"
-
-  if destination == bundled_template_path then
-    destination = user_template_path()
-  end
-
-  return copy_bundled_file({
-    source = bundled_template_path,
-    destination = destination,
-    force = options.force,
-    label = "Assignment template",
-  })
-end
-
 function M.initialize_custom_snippets_dir()
   local directory = M.get_paths().custom_snippets_dir
   local ok, result = pcall(vim.fn.mkdir, directory, "p")
@@ -155,8 +232,7 @@ function M.run_command(argv)
   local output = vim.fn.system(argv)
   local exit_code = vim.v.shell_error
   if exit_code ~= 0 then
-    local err = output ~= "" and output or "Command failed"
-    vim.notify(err, vim.log.levels.ERROR)
+    vim.notify(util.sanitize_message(output), vim.log.levels.ERROR)
     return nil
   end
   return output

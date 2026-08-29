@@ -118,6 +118,99 @@ function M.load_csv_rows(path)
   return rows
 end
 
+function M.relative_path(path, directory)
+  local prefix = directory:gsub("/+$", "") .. "/"
+  if path:sub(1, #prefix) == prefix then
+    return path:sub(#prefix + 1)
+  end
+  return vim.fn.fnamemodify(path, ":t")
+end
+
+function M.list_tex_files(directory, recursive)
+  if vim.fn.isdirectory(directory) ~= 1 then
+    return {}
+  end
+
+  local patterns = recursive and { "*.tex", "**/*.tex" } or { "*.tex" }
+  local seen = {}
+  local files = {}
+
+  for _, pattern in ipairs(patterns) do
+    for _, path in ipairs(vim.fn.globpath(directory, pattern, false, true)) do
+      if vim.fn.filereadable(path) == 1 and not seen[path] then
+        seen[path] = true
+        table.insert(files, path)
+      end
+    end
+  end
+
+  table.sort(files)
+  return files
+end
+
+function M.sanitize_message(text, max_len)
+  if type(text) ~= "string" or text == "" then
+    return "Command failed"
+  end
+
+  local cleaned = text:gsub("%c", " "):gsub("%s+", " "):match("^%s*(.-)%s*$")
+  max_len = max_len or 500
+  if #cleaned > max_len then
+    return cleaned:sub(1, max_len) .. "..."
+  end
+  return cleaned
+end
+
+function M.valid_date(value)
+  if type(value) ~= "string" then
+    return false
+  end
+
+  local year, month, day = value:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
+  year, month, day = tonumber(year), tonumber(month), tonumber(day)
+  if not year or not month or not day then
+    return false
+  end
+  if month < 1 or month > 12 or day < 1 or day > 31 then
+    return false
+  end
+
+  local days_in_month = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+  if year % 4 == 0 and (year % 100 ~= 0 or year % 400 == 0) then
+    days_in_month[2] = 29
+  end
+
+  return day <= days_in_month[month]
+end
+
+function M.parse_template_metadata(path)
+  local ok, lines = pcall(vim.fn.readfile, path)
+  if not ok or type(lines) ~= "table" then
+    return {}
+  end
+
+  local metadata = {}
+  local limit = math.min(#lines, 20)
+  for index = 1, limit do
+    local value = lines[index]:match("^%%%s*latex%-tools:%s*(.+)%s*$")
+    if value then
+      local key, setting = value:match("^([^=]+)%s*=%s*(.+)$")
+      if key and setting then
+        metadata[key:match("^%s*(.-)%s*$")] = setting:match("^%s*(.-)%s*$")
+      else
+        metadata.type = value:match("^%s*(.-)%s*$")
+      end
+    end
+  end
+
+  return metadata
+end
+
+function M.is_course_aware_template(path)
+  local metadata = M.parse_template_metadata(path)
+  return metadata.type == "course-aware"
+end
+
 function M.insert_template_lines(lines)
   local buf = vim.api.nvim_get_current_buf()
   local existing = vim.api.nvim_buf_get_lines(buf, 0, -1, false)

@@ -4,6 +4,7 @@ local figures = require("latex-tools.figures")
 local tables = require("latex-tools.tables")
 local references = require("latex-tools.references")
 local assignment = require("latex-tools.assignment")
+local document_templates = require("latex-tools.templates")
 local tex_snippets = require("latex-tools.tex_snippets")
 local tests = require("latex-tools.tests")
 local util = require("latex-tools.util")
@@ -80,6 +81,14 @@ function M.insert_assignment_template()
   return assignment.insert_assignment_template()
 end
 
+function M.insert_template()
+  return document_templates.insert_template()
+end
+
+function M.init_user_templates(opts)
+  return require("latex-tools.state").initialize_user_templates(opts)
+end
+
 function M.init_course_metadata(opts)
   return require("latex-tools.state").initialize_course_metadata(opts)
 end
@@ -96,7 +105,7 @@ function M.init_user_files(opts)
   local options = opts or {}
   return {
     snippets_dir = M.init_custom_snippets_dir(),
-    assignment_template = M.init_assignment_template(options),
+    templates = M.init_user_templates(options),
     course_metadata = M.init_course_metadata(options),
   }
 end

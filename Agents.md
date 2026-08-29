@@ -11,6 +11,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - `config.lua` — User options (keymaps, commands, path overrides)
   - `state.lua` — Path resolution (user `~/.config/nvim/latex-tools/*` preferred over bundled `templates/`)
   - `assignment.lua` — Course picker + Python-driven template rendering
+  - `templates.lua` — Document template discovery, metadata parsing, and unified picker
   - `figures.lua` / `tables.lua` — Interactive snippet builders (UI select + input)
   - `references.lua` — Label/`\ref` picker + BibTeX key picker (parses `.bib` and buffer labels)
   - `snippets.lua` — Pre-canned Python/R/SQL `lstlisting` blocks
@@ -27,7 +28,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 ## Key Conventions
 
 - **Paths**: `state.get_paths()` resolves bundled assets from `templates/`, user course/template files from `stdpath("config")/latex-tools/`, and custom snippets from `stdpath("config")/latex-tools/snippets/`. Respect configured path overrides.
-- **User files**: `:LatexToolsInit` creates course metadata, the assignment template, and the snippets directory. `:LatexToolsInit!` overwrites the course and assignment starter files but never removes snippets. Personal data lives in user `courses.yaml` under `academic_profile`.
+- **User files**: `:LatexToolsInit` creates course metadata, document templates under `latex-tools/templates/`, and the snippets directory. `:LatexToolsInit!` overwrites the course and template starter files but never removes snippets. Personal data lives in user `courses.yaml` under `academic_profile`.
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline. `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.
 - **UI**: `vim.ui.select()` for pickers, `vim.fn.input()` for prompts. Stub them in tests.
@@ -46,8 +47,13 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 
 **Change template rendering**
 - Edit `templates/assignment.tex` (commands like `\newcommand{\AssignmentTitle}{...}`).
+- Mark course-aware templates with `% latex-tools: course-aware` near the top of the file.
 - Update Python `render_template()` metadata dict + `set_command_value()`.
 - Extend `courses.yaml` schema if needed (update parser + tests).
+
+**Add a document template**
+- Add a `.tex` file under `templates/` for bundled defaults or the user `latex-tools/templates/` directory for personal templates.
+- Use `% latex-tools: course-aware` only when the template should run through the Python renderer and course picker.
 
 **Extend course metadata**
 - Modify `parse_yaml_fallback()` and `list_courses()` / `render_template()` in Python.

@@ -53,6 +53,7 @@ end
 setup_runtime_path()
 local templates = require("latex-tools")
 local state = require("latex-tools.state")
+local util = require("latex-tools.util")
 templates.setup({ keymaps = { enable = false }, commands = { enable = false } })
 
 local passed = 0
@@ -318,8 +319,8 @@ run_test("state prefers user config course metadata when present", function()
   end)
 end)
 
-run_test("state prefers user config assignment template when present", function()
-  local expected = "/tmp/nvim-config/latex-tools/assignment.tex"
+run_test("state prefers user templates directory assignment template when present", function()
+  local expected = "/tmp/nvim-config/latex-tools/templates/assignment.tex"
 
   with_stubs({
     [{ vim.fn, "stdpath" }] = function(kind)
@@ -334,7 +335,27 @@ run_test("state prefers user config assignment template when present", function(
     end,
   }, function()
     local paths = state.get_paths()
-    assert_true(paths.tex_template_path == expected, "Expected user config template to be preferred")
+    assert_true(paths.tex_template_path == expected, "Expected user templates assignment to be preferred")
+  end)
+end)
+
+run_test("state falls back to legacy assignment template path", function()
+  local legacy = "/tmp/nvim-config/latex-tools/assignment.tex"
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == legacy then
+        return 1
+      end
+      return 0
+    end,
+  }, function()
+    local paths = state.get_paths()
+    assert_true(paths.tex_template_path == legacy, "Expected legacy assignment template to be preferred")
   end)
 end)
 
@@ -371,10 +392,10 @@ run_test("combined user file bootstrap runs every initializer", function()
       table.insert(calls, "snippets")
       return "/tmp/snippets"
     end,
-    [{ state, "initialize_assignment_template" }] = function(opts)
-      table.insert(calls, "assignment")
-      assert_true(opts.force == true, "Expected force option for assignment template")
-      return "/tmp/assignment.tex"
+    [{ state, "initialize_user_templates" }] = function(opts)
+      table.insert(calls, "templates")
+      assert_true(opts.force == true, "Expected force option for user templates")
+      return { "/tmp/templates/assignment.tex" }
     end,
     [{ state, "initialize_course_metadata" }] = function(opts)
       table.insert(calls, "courses")
@@ -384,11 +405,11 @@ run_test("combined user file bootstrap runs every initializer", function()
   }, function()
     local result = templates.init_user_files({ force = true })
     assert_true(result.snippets_dir == "/tmp/snippets", "Expected snippet directory result")
-    assert_true(result.assignment_template == "/tmp/assignment.tex", "Expected assignment result")
+    assert_true(result.templates[1] == "/tmp/templates/assignment.tex", "Expected templates result")
     assert_true(result.course_metadata == "/tmp/courses.yaml", "Expected course metadata result")
   end)
 
-  assert_true(table.concat(calls, ",") == "snippets,assignment,courses", "Expected every initializer to run")
+  assert_true(table.concat(calls, ",") == "snippets,templates,courses", "Expected every initializer to run")
 end)
 
 run_test("course metadata bootstrap writes starter file to user config", function()
@@ -435,8 +456,9 @@ run_test("course metadata bootstrap writes starter file to user config", functio
   assert_true(type(wrote_lines) == "table" and wrote_lines[1] == "academic_profile:", "Expected bootstrap to copy starter YAML content")
 end)
 
-run_test("assignment template bootstrap writes starter file to user config", function()
-  local destination = "/tmp/nvim-config/latex-tools/assignment.tex"
+run_test("user templates bootstrap writes bundled templates to user directory", function()
+  local destination = "/tmp/nvim-config/latex-tools/templates/assignment.tex"
+  local bundled_assignment = state.get_paths().template_dir .. "/assignment.tex"
   local wrote_lines = nil
   local wrote_path = nil
   local mkdir_path = nil
@@ -450,13 +472,19 @@ run_test("assignment template bootstrap writes starter file to user config", fun
       if path == destination then
         return 0
       end
-      if path:sub(-#"/templates/assignment.tex") == "/templates/assignment.tex" then
+      if path == bundled_assignment then
         return 1
       end
       return 0
     end,
+    [{ vim.fn, "glob" }] = function(pattern, _a, _b)
+      if pattern:find("/templates/*.tex", 1, true) then
+        return { bundled_assignment }
+      end
+      return {}
+    end,
     [{ vim.fn, "readfile" }] = function(path)
-      assert_true(path:sub(-#"/templates/assignment.tex") == "/templates/assignment.tex", "Unexpected source template path")
+      assert_true(path == bundled_assignment, "Unexpected source template path")
       return { "\\documentclass{article}", "\\begin{document}" }
     end,
     [{ vim.fn, "writefile" }] = function(lines, path)
@@ -470,13 +498,126 @@ run_test("assignment template bootstrap writes starter file to user config", fun
       return 1
     end,
   }, function()
-    local result = templates.init_assignment_template()
-    assert_true(result == destination, "Expected bootstrap to target the user config template")
+    local result = templates.init_user_templates()
+    assert_true(type(result) == "table" and result[1] == destination, "Expected bootstrap to target the user templates directory")
   end)
 
-  assert_true(mkdir_path == "/tmp/nvim-config/latex-tools", "Expected bootstrap to create the config directory")
-  assert_true(wrote_path == destination, "Expected bootstrap to write the user config template")
+  assert_true(mkdir_path == "/tmp/nvim-config/latex-tools/templates", "Expected bootstrap to create the templates directory")
+  assert_true(wrote_path == destination, "Expected bootstrap to write the user assignment template")
   assert_true(type(wrote_lines) == "table" and wrote_lines[1] == "\\documentclass{article}", "Expected bootstrap to copy starter template content")
+end)
+
+run_test("template picker inserts static subfile template", function()
+  new_buffer()
+  local document_templates = require("latex-tools.templates")
+  local bundled_dir = nil
+
+  with_stubs({
+    [{ vim.fn, "isdirectory" }] = function(path)
+      if bundled_dir and path == bundled_dir then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "globpath" }] = function(directory, pattern, _a, _b)
+      if pattern == "*.tex" and directory == bundled_dir then
+        return {
+          bundled_dir .. "/assignment.tex",
+          bundled_dir .. "/subfile.tex",
+        }
+      end
+      return {}
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path:sub(-#"subfile.tex") == "subfile.tex" then
+        return 1
+      end
+      if path:sub(-#"assignment.tex") == "assignment.tex" then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      if path:sub(-#"assignment.tex") == "assignment.tex" then
+        return { "% latex-tools: course-aware" }
+      end
+      if path:sub(-#"subfile.tex") == "subfile.tex" then
+        return { "\\documentclass[../main]{subfiles}", "\\begin{document}" }
+      end
+      return {}
+    end,
+    [{ vim.ui, "select" }] = function(items, _opts, on_choice)
+      local subfile = nil
+      for _, item in ipairs(items) do
+        if item.name == "subfile.tex" then
+          subfile = item
+          break
+        end
+      end
+      assert_true(subfile ~= nil, "Expected subfile.tex in template picker")
+      on_choice(subfile)
+    end,
+  }, function()
+    bundled_dir = state.get_paths().template_dir
+    document_templates.insert_template()
+  end)
+
+  local lines = get_buffer_lines()
+  assert_contains(lines, "\\documentclass[../main]{subfiles}")
+end)
+
+run_test("valid_date accepts ISO dates and rejects malformed values", function()
+  assert_true(util.valid_date("2026-10-01"), "Expected valid date to pass")
+  assert_true(util.valid_date("2024-02-29"), "Expected leap day to pass")
+  assert_true(not util.valid_date("2026-13-01"), "Expected invalid month to fail")
+  assert_true(not util.valid_date("2026-02-30"), "Expected invalid day to fail")
+  assert_true(not util.valid_date("10/01/2026"), "Expected non-ISO format to fail")
+end)
+
+run_test("sanitize_message strips control characters and truncates output", function()
+  local cleaned = util.sanitize_message("line one\nline two\tbad", 100)
+  assert_true(cleaned == "line one line two bad", "Expected control characters to be normalized")
+  assert_true(#util.sanitize_message(string.rep("x", 600), 100) == 103, "Expected truncation with ellipsis")
+end)
+
+run_test("template metadata marks bundled assignment as course-aware", function()
+  local assignment_path = state.get_paths().template_dir .. "/assignment.tex"
+  assert_true(util.is_course_aware_template(assignment_path), "Expected bundled assignment metadata to be detected")
+end)
+
+run_test("assignment flow rejects invalid due dates", function()
+  new_buffer()
+  local due_prompts = 0
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nonexistent-nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(_path)
+      return 0
+    end,
+    [{ vim.ui, "select" }] = function(items, _opts, on_choice)
+      on_choice(items[1])
+    end,
+    [{ vim.fn, "input" }] = function(prompt, default)
+      if prompt:find("Assignment title", 1, true) then
+        return "Automated Test Assignment"
+      end
+      if prompt:find("Due date", 1, true) then
+        due_prompts = due_prompts + 1
+        if due_prompts == 1 then
+          return "not-a-date"
+        end
+        return "2026-10-01"
+      end
+      return default or ""
+    end,
+  }, function()
+    templates.insert_assignment_template()
+  end)
+
+  assert_true(due_prompts == 2, "Expected invalid due date to trigger a second prompt")
 end)
 
 run_test("assignment template flow inserts rendered document", function()

@@ -1,3 +1,7 @@
+% !TEX program = xelatex
+% !BIB program = biber
+% latex-tools: course-aware
+
 \documentclass[12pt,letterpaper]{article}
 
 % -----------------------------
@@ -17,6 +21,17 @@
 \usepackage{hyperref}
 \usepackage{caption}
 \usepackage{listings}
+\usepackage{subfiles}
+
+\usepackage[
+    backend=biber,
+    style=authoryear-icomp,
+    sortlocale=de_DE,
+    natbib=true,
+    url=false, 
+    doi=true,
+    eprint=false
+]{biblatex}
 
 % -----------------------------
 % Page setup

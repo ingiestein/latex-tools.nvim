@@ -13,9 +13,17 @@ function M.setup()
     require("latex-tools").run_tests()
   end, { desc = "Run LaTeX tools regression tests" })
 
+  vim.api.nvim_create_user_command("LatexToolsTemplate", function()
+    require("latex-tools").insert_template()
+  end, { desc = "Insert a document template" })
+
   vim.api.nvim_create_user_command("LatexToolsAssignment", function()
     require("latex-tools").insert_assignment_template()
-  end, { desc = "Insert assignment template" })
+  end, { desc = "Insert course-aware assignment template" })
+
+  vim.api.nvim_create_user_command("LatexToolsInitTemplates", function(opts)
+    require("latex-tools").init_user_templates({ force = opts.bang })
+  end, { bang = true, desc = "Create user document templates from bundled templates" })
 
   vim.api.nvim_create_user_command("LatexToolsSnippet", function()
     require("latex-tools").insert_custom_snippet()
@@ -26,8 +34,8 @@ function M.setup()
   end, { bang = true, desc = "Create user course metadata from the bundled template" })
 
   vim.api.nvim_create_user_command("LatexToolsInitAssignment", function(opts)
-    require("latex-tools").init_assignment_template({ force = opts.bang })
-  end, { bang = true, desc = "Create a user assignment template from the bundled template" })
+    require("latex-tools").init_user_templates({ force = opts.bang })
+  end, { bang = true, desc = "Create user document templates from the bundled templates" })
 
   vim.api.nvim_create_user_command("LatexToolsInitSnippets", function()
     require("latex-tools").init_custom_snippets_dir()

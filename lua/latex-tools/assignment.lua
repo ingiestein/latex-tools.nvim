@@ -3,7 +3,7 @@ local util = require("latex-tools.util")
 
 local M = {}
 
-local function load_courses()
+local function load_courses(tex_path)
   local paths = state.get_paths()
   local output = state.run_command({
     state.get_python_cmd(),
@@ -11,7 +11,7 @@ local function load_courses()
     "--yaml",
     paths.yaml_path,
     "--template",
-    paths.tex_template_path,
+    tex_path,
     "--list-courses",
   })
 
@@ -27,9 +27,23 @@ local function load_courses()
   return decoded.courses
 end
 
-function M.insert_assignment_template()
+local function prompt_due_date(default)
+  while true do
+    local due_date = vim.fn.input("Due date (YYYY-MM-DD): ", default)
+    if due_date == "" then
+      due_date = default
+    end
+    if util.valid_date(due_date) then
+      return due_date
+    end
+    vim.notify("Invalid due date. Use YYYY-MM-DD.", vim.log.levels.WARN)
+  end
+end
+
+function M.insert_assignment_template(template_path)
   local paths = state.get_paths()
-  local courses = load_courses()
+  local tex_path = template_path or paths.tex_template_path
+  local courses = load_courses(tex_path)
   if #courses == 0 then
     vim.notify("No courses available in " .. paths.yaml_path, vim.log.levels.ERROR)
     return
@@ -69,10 +83,7 @@ function M.insert_assignment_template()
       assignment_title = title_default
     end
 
-    local due_date = vim.fn.input("Due date (YYYY-MM-DD): ", due_default)
-    if due_date == "" then
-      due_date = due_default
-    end
+    local due_date = prompt_due_date(due_default)
 
     local rendered = state.run_command({
       state.get_python_cmd(),
@@ -80,7 +91,7 @@ function M.insert_assignment_template()
       "--yaml",
       paths.yaml_path,
       "--template",
-      paths.tex_template_path,
+      tex_path,
       "--render",
       "--course-key",
       choice.key,

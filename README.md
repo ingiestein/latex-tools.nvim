@@ -1,6 +1,6 @@
 # latex-tools.nvim
 
-latex-tools.nvim is a small Neovim plugin for consistently formatted LaTeX assignments. It helps with course-aware assignment files, figures, tables, references, citations, and reusable snippets. If you enjoy Neovim, LaTeX, and unnecessarily polished school papers, this is for you.
+latex-tools.nvim is a small Neovim plugin for consistently formatted LaTeX assignments. It helps with course-aware assignment files, document templates, figures, tables, references, citations, and reusable snippets. If you enjoy Neovim, LaTeX, and unnecessarily polished school papers, this is for you.
 
 ## Getting Started
 
@@ -18,8 +18,9 @@ return {
       paths = {
         -- Optional overrides. Plugin-local defaults are used when omitted.
         -- template_dir = vim.fn.expand("~/.config/latex-templates"),
+        -- user_templates_dir = vim.fn.expand("~/.config/nvim/latex-tools/templates"),
         -- yaml_path = vim.fn.expand("~/.config/nvim/latex-tools/courses.yaml"),
-        -- tex_template_path = vim.fn.expand("~/.config/nvim/latex-tools/assignment.tex"),
+        -- tex_template_path = vim.fn.expand("~/.config/nvim/latex-tools/templates/assignment.tex"),
         -- custom_snippets_dir = vim.fn.expand("~/.config/nvim/latex-tools/snippets"),
         -- python_script_path = vim.fn.expand("~/.config/latex-templates/render_template.py"),
         -- test_script_path = vim.fn.expand("~/.config/nvim/tests/templates_spec.lua"),
@@ -47,7 +48,7 @@ Run:
 This creates these user-owned files and folders:
 
 - `~/.config/nvim/latex-tools/courses.yaml`
-- `~/.config/nvim/latex-tools/assignment.tex`
+- `~/.config/nvim/latex-tools/templates/` (bundled document templates, including `assignment.tex` and `subfile.tex`)
 - `~/.config/nvim/latex-tools/snippets/`
 
 ### 3. Add your courses
@@ -81,29 +82,55 @@ selection:
   active_due_date: 2026-08-15
 ```
 
-### 4. Create an assignment
+### 4. Insert a document template
 
-Open a new buffer, then run `:LatexToolsAssignment` or use `\ta`. Choose a course, enter an assignment title and due date, and the plugin inserts the rendered assignment document.
+Open a new buffer, then run `:LatexToolsTemplate` or use `\ta`. Pick a template:
+
+- **assignment.tex (course-aware)** — choose a course, enter a title and due date, and insert the rendered assignment document.
+- **subfile.tex** — insert a `subfiles` chapter scaffold as-is.
+- Any other `.tex` file you add under your templates directory.
+
+Use `:LatexToolsAssignment` when you want to skip the template picker and go straight to the course-aware assignment flow.
 
 ## Everyday Tools
 
+- `\ta`: document template picker (`assignment.tex`, `subfile.tex`, and your custom templates).
+- `\tx`: choose one of your reusable `.tex` snippets and insert it at the cursor.
 - `\tf`: choose an image and insert a figure with a caption.
 - `\tb`: build a table by answering a few prompts.
 - `\tR`: insert a `\ref`, `\pageref`, or `\autoref` for a label in the current buffer.
 - `\tk`: choose a BibTeX key and insert a citation.
 - `\tv`: turn a CSV file into a LaTeX table.
-- `\tx`: choose one of your reusable `.tex` snippets and insert it at the cursor.
 - `\tp`, `\tr`, and `\ts`: insert the built-in Python, R, and SQL listing blocks.
+
+## Templates vs snippets
+
+The plugin keeps two kinds of reusable `.tex` content separate on purpose:
+
+| Kind | Location | Insert with | Purpose |
+| --- | --- | --- | --- |
+| **Document templates** | `~/.config/nvim/latex-tools/templates/*.tex` | `:LatexToolsTemplate` / `\ta` | Full documents or chapter scaffolds. Replaces or prepends the buffer. |
+| **Snippets** | `~/.config/nvim/latex-tools/snippets/**/*.tex` | `:LatexToolsSnippet` / `\tx` | Partial blocks inserted at the cursor. Nested folders are supported. |
+
+Add a new static template by dropping a `.tex` file into your templates directory. Mark a template as course-aware by adding this near the top of the file:
+
+```tex
+% latex-tools: course-aware
+```
+
+The picker will then run the course/title/due-date flow and render it with your `courses.yaml` metadata.
 
 ## Custom Files
 
-### Course metadata and assignment template
+### Course metadata and document templates
 
-The plugin first looks for `courses.yaml` and `assignment.tex` in `vim.fn.stdpath("config") .. "/latex-tools"`. If either file does not exist, it falls back to the bundled sample in `templates/`.
+The plugin first looks for user files under `vim.fn.stdpath("config") .. "/latex-tools"`. If a file does not exist, it falls back to the bundled sample in `templates/`.
 
-`assignment.tex` is the single course-aware assignment template in the current release. You can edit your local copy freely; additional user-defined full-document templates are planned for a future release.
+- `courses.yaml` lives directly in the latex-tools config directory.
+- Document templates live in `latex-tools/templates/`.
+- A legacy `latex-tools/assignment.tex` path is still honored if you have not migrated to `templates/assignment.tex` yet.
 
-Run `:LatexToolsInit!` to replace your local course metadata and assignment template with fresh bundled copies. It never removes snippets.
+Run `:LatexToolsInit!` to replace your local course metadata and templates with fresh bundled copies. It never removes snippets.
 
 ### Reusable snippets
 
@@ -120,8 +147,9 @@ opts = {
   keymaps = { enable = true, prefix = "\\t" },
   commands = { enable = true },
   paths = {
+    -- user_templates_dir = vim.fn.expand("~/.config/nvim/latex-tools/templates"),
     -- yaml_path = vim.fn.expand("~/.config/nvim/latex-tools/courses.yaml"),
-    -- tex_template_path = vim.fn.expand("~/.config/nvim/latex-tools/assignment.tex"),
+    -- tex_template_path = vim.fn.expand("~/.config/nvim/latex-tools/templates/assignment.tex"),
     -- custom_snippets_dir = vim.fn.expand("~/.config/nvim/latex-tools/snippets"),
   },
   -- python_cmd = vim.g.python3_host_prog,
@@ -134,6 +162,7 @@ Available options:
 - `keymaps.prefix` (string): keymap prefix, defaults to `\\t`.
 - `commands.enable` (boolean): enable plugin-provided user commands.
 - `paths.template_dir` (string|nil): optional directory override for bundled template assets.
+- `paths.user_templates_dir` (string|nil): optional user document template directory override.
 - `paths.yaml_path` (string|nil): optional course metadata override.
 - `paths.tex_template_path` (string|nil): optional assignment template override.
 - `paths.custom_snippets_dir` (string|nil): optional reusable snippet directory override.
@@ -141,13 +170,19 @@ Available options:
 - `paths.test_script_path` (string|nil): optional test suite override.
 - `python_cmd` (string|nil): optional Python executable override.
 
+### Security note
+
+Path overrides such as `paths.python_script_path` and `python_cmd` cause the plugin to execute programs on your machine with your user privileges. Only point them at interpreters and scripts you trust. Command failures are sanitized before they are shown in notifications, but you should still treat renderer output as untrusted text.
+
 ## Commands
 
 - `:LatexToolsTest`: run the plugin's headless regression suite.
 - `:LatexToolsInitCourses[!]`: create the user `courses.yaml` from the bundled example; use `!` to overwrite it.
-- `:LatexToolsInitAssignment[!]`: create the user `assignment.tex` from the bundled template; use `!` to overwrite it.
+- `:LatexToolsInitTemplates[!]`: create user document templates from the bundled templates; use `!` to overwrite them.
+- `:LatexToolsInitAssignment[!]`: alias for `:LatexToolsInitTemplates[!]`.
 - `:LatexToolsInitSnippets`: create the custom snippets directory.
-- `:LatexToolsInit[!]`: initialize course metadata, the assignment template, and the snippets directory; use `!` to overwrite the course and assignment files.
+- `:LatexToolsInit[!]`: initialize course metadata, document templates, and the snippets directory; use `!` to overwrite the course and template files.
+- `:LatexToolsTemplate`: choose and insert a document template.
 - `:LatexToolsAssignment`: choose a course and insert a rendered assignment document.
 - `:LatexToolsSnippet`: choose and insert a custom `.tex` snippet at the cursor.
 - `:LatexToolsFigure`: choose an image and add a captioned figure.
@@ -164,9 +199,11 @@ Available options:
 - `require("latex-tools").setup(opts)`
 - `require("latex-tools").get_config()`
 - `require("latex-tools").init_course_metadata(opts)`
-- `require("latex-tools").init_assignment_template(opts)`
+- `require("latex-tools").init_user_templates(opts)`
+- `require("latex-tools").init_assignment_template(opts)` (alias for `init_user_templates`)
 - `require("latex-tools").init_custom_snippets_dir()`
 - `require("latex-tools").init_user_files(opts)`
+- `require("latex-tools").insert_template()`
 - `require("latex-tools").insert_assignment_template()`
 - `require("latex-tools").insert_custom_snippet()`
 - `require("latex-tools").insert_figure_snippet()`
@@ -184,7 +221,7 @@ Available options:
 
 Prefix defaults to `\t`.
 
-- `\ta`: assignment template picker
+- `\ta`: document template picker
 - `\tx`: custom `.tex` snippet picker
 - `\tf`: figure picker
 - `\tF`: placeholder figure

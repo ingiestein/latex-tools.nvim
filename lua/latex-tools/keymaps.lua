@@ -15,8 +15,8 @@ function M.setup(opts)
   end
 
   map(prefix .. "a", function()
-    require("latex-tools").insert_assignment_template()
-  end, "Assignment Template Picker")
+    require("latex-tools").insert_template()
+  end, "Document Template Picker")
 
   map(prefix .. "x", function()
     vim.cmd("LatexToolsSnippet")
@@ -73,8 +73,8 @@ function M.setup(opts)
   local ok, which_key = pcall(require, "which-key")
   if ok then
     which_key.add({
-      { prefix, desc = "Templates" },
-      { prefix .. "a", desc = "Assignment Template Picker" },
+      { prefix, group = "LaTeX Tools" },
+      { prefix .. "a", desc = "Document Template Picker" },
       { prefix .. "x", desc = "Custom LaTeX Snippet Picker" },
       { prefix .. "f", desc = "Figure (Picker + Caption)" },
       { prefix .. "F", desc = "Figure (Placeholder)" },
