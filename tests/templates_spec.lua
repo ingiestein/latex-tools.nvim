@@ -398,18 +398,43 @@ run_test("combined user file bootstrap runs every initializer", function()
       return { "/tmp/templates/assignment.tex" }
     end,
     [{ state, "initialize_course_metadata" }] = function(opts)
-      table.insert(calls, "courses")
+      table.insert(calls, "metadata")
       assert_true(opts.force == true, "Expected force option for course metadata")
       return "/tmp/courses.yaml"
     end,
   }, function()
-    local result = templates.init_user_files({ force = true })
+    local result = templates.init_all({ force = true })
     assert_true(result.snippets_dir == "/tmp/snippets", "Expected snippet directory result")
     assert_true(result.templates[1] == "/tmp/templates/assignment.tex", "Expected templates result")
-    assert_true(result.course_metadata == "/tmp/courses.yaml", "Expected course metadata result")
+    assert_true(result.metadata == "/tmp/courses.yaml", "Expected metadata result")
   end)
 
-  assert_true(table.concat(calls, ",") == "snippets,templates,courses", "Expected every initializer to run")
+  assert_true(table.concat(calls, ",") == "snippets,templates,metadata", "Expected every initializer to run")
+end)
+
+run_test("init_all can initialize templates without metadata", function()
+  local calls = {}
+
+  with_stubs({
+    [{ state, "initialize_user_templates" }] = function(opts)
+      table.insert(calls, "templates")
+      assert_true(opts.force == true, "Expected force option for templates-only init")
+      return { "/tmp/templates/assignment.tex" }
+    end,
+    [{ state, "initialize_course_metadata" }] = function()
+      error("metadata init should not run")
+    end,
+    [{ state, "initialize_custom_snippets_dir" }] = function()
+      error("snippets init should not run")
+    end,
+  }, function()
+    local result = templates.init_all({ templates = true, metadata = false, snippets = false, force = true })
+    assert_true(result.templates[1] == "/tmp/templates/assignment.tex", "Expected templates-only result")
+    assert_true(result.metadata == nil, "Expected metadata to be skipped")
+    assert_true(result.snippets_dir == nil, "Expected snippets to be skipped")
+  end)
+
+  assert_true(table.concat(calls, ",") == "templates", "Expected only templates initializer to run")
 end)
 
 run_test("course metadata bootstrap writes starter file to user config", function()

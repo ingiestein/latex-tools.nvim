@@ -9,6 +9,7 @@
 - Summarized template initialization into a single notification instead of one message per file.
 - Sanitized external command error output before showing notifications.
 - Warn on setup when `paths.python_script_path` is overridden.
+- Split init API into `init_metadata`, `init_templates`, `init_snippets`, and selective `init_all`.
 - Documented the templates-vs-snippets distinction, security notes, and updated commands in `README.md`.
 
 ## 0.2.1

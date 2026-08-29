@@ -85,29 +85,60 @@ function M.insert_template()
   return document_templates.insert_template()
 end
 
-function M.init_user_templates(opts)
-  return require("latex-tools.state").initialize_user_templates(opts)
-end
-
-function M.init_course_metadata(opts)
+function M.init_metadata(opts)
   return require("latex-tools.state").initialize_course_metadata(opts)
 end
 
-function M.init_assignment_template(opts)
-  return require("latex-tools.state").initialize_assignment_template(opts)
+function M.init_templates(opts)
+  return require("latex-tools.state").initialize_user_templates(opts)
 end
 
-function M.init_custom_snippets_dir()
+function M.init_snippets()
   return require("latex-tools.state").initialize_custom_snippets_dir()
 end
 
+--- Initialize user files. Pass opts to run a subset only.
+--- @param opts table|nil { metadata?: boolean, templates?: boolean, snippets?: boolean, force?: boolean }
+function M.init_all(opts)
+  local options = vim.tbl_extend("force", {
+    metadata = true,
+    templates = true,
+    snippets = true,
+    force = false,
+  }, opts or {})
+
+  local result = {}
+  if options.snippets then
+    result.snippets_dir = M.init_snippets()
+  end
+  if options.templates then
+    result.templates = M.init_templates({ force = options.force })
+  end
+  if options.metadata then
+    result.metadata = M.init_metadata({ force = options.force })
+  end
+  return result
+end
+
+-- Backward-compatible aliases
+function M.init_course_metadata(opts)
+  return M.init_metadata(opts)
+end
+
+function M.init_user_templates(opts)
+  return M.init_templates(opts)
+end
+
+function M.init_assignment_template(opts)
+  return M.init_templates(opts)
+end
+
+function M.init_custom_snippets_dir()
+  return M.init_snippets()
+end
+
 function M.init_user_files(opts)
-  local options = opts or {}
-  return {
-    snippets_dir = M.init_custom_snippets_dir(),
-    templates = M.init_user_templates(options),
-    course_metadata = M.init_course_metadata(options),
-  }
+  return M.init_all(opts)
 end
 
 function M.run_tests()

@@ -21,29 +21,33 @@ function M.setup()
     require("latex-tools").insert_assignment_template()
   end, { desc = "Insert course-aware assignment template" })
 
+  vim.api.nvim_create_user_command("LatexToolsInitMetadata", function(opts)
+    require("latex-tools").init_metadata({ force = opts.bang })
+  end, { bang = true, desc = "Create user course metadata from the bundled example" })
+
+  vim.api.nvim_create_user_command("LatexToolsInitCourses", function(opts)
+    require("latex-tools").init_metadata({ force = opts.bang })
+  end, { bang = true, desc = "Alias for :LatexToolsInitMetadata" })
+
   vim.api.nvim_create_user_command("LatexToolsInitTemplates", function(opts)
-    require("latex-tools").init_user_templates({ force = opts.bang })
+    require("latex-tools").init_templates({ force = opts.bang })
   end, { bang = true, desc = "Create user document templates from bundled templates" })
+
+  vim.api.nvim_create_user_command("LatexToolsInitAssignment", function(opts)
+    require("latex-tools").init_templates({ force = opts.bang })
+  end, { bang = true, desc = "Alias for :LatexToolsInitTemplates" })
+
+  vim.api.nvim_create_user_command("LatexToolsInitSnippets", function()
+    require("latex-tools").init_snippets()
+  end, { desc = "Create the custom LaTeX snippet directory" })
+
+  vim.api.nvim_create_user_command("LatexToolsInit", function(opts)
+    require("latex-tools").init_all({ force = opts.bang })
+  end, { bang = true, desc = "Initialize metadata, templates, and snippets" })
 
   vim.api.nvim_create_user_command("LatexToolsSnippet", function()
     require("latex-tools").insert_custom_snippet()
   end, { desc = "Insert a custom LaTeX snippet" })
-
-  vim.api.nvim_create_user_command("LatexToolsInitCourses", function(opts)
-    require("latex-tools").init_course_metadata({ force = opts.bang })
-  end, { bang = true, desc = "Create user course metadata from the bundled template" })
-
-  vim.api.nvim_create_user_command("LatexToolsInitAssignment", function(opts)
-    require("latex-tools").init_user_templates({ force = opts.bang })
-  end, { bang = true, desc = "Create user document templates from the bundled templates" })
-
-  vim.api.nvim_create_user_command("LatexToolsInitSnippets", function()
-    require("latex-tools").init_custom_snippets_dir()
-  end, { desc = "Create the custom LaTeX snippet directory" })
-
-  vim.api.nvim_create_user_command("LatexToolsInit", function(opts)
-    require("latex-tools").init_user_files({ force = opts.bang })
-  end, { bang = true, desc = "Initialize user LaTeX tools files and directories" })
 
   vim.api.nvim_create_user_command("LatexToolsFigure", function()
     require("latex-tools").insert_figure_snippet()
