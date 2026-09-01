@@ -581,6 +581,14 @@ run_test("subfile template rendering substitutes parent file name", function()
   assert_contains(rendered, "\\documentclass[../assignment-3]{subfiles}")
 end)
 
+run_test("subfile include path uses relative subfile directory", function()
+  local subfiles = require("latex-tools.subfiles")
+  assert_true(
+    subfiles.build_subfile_include_path("chapter-one.tex") == "./subfile/chapter-one.tex",
+    "Expected relative include path"
+  )
+end)
+
 run_test("create subfile writes customized file and opens split", function()
   new_buffer()
   vim.api.nvim_buf_set_lines(0, 0, -1, false, {
@@ -645,6 +653,7 @@ run_test("create subfile writes customized file and opens split", function()
   assert_true(wrote_path == "/tmp/project/subfile/chapter-one.tex", "Expected subfile path")
   assert_contains(wrote_lines, "% !TEX root = ../assignment-3.tex")
   assert_contains(wrote_lines, "\\documentclass[../assignment-3]{subfiles}")
+  assert_contains(get_buffer_lines(), "\\subfile{./subfile/chapter-one.tex}")
   assert_true(split_cmd:find("rightbelow vsplit", 1, true) ~= nil, "Expected right split")
 end)
 
