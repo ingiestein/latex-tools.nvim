@@ -532,14 +532,13 @@ run_test("user templates bootstrap writes bundled templates to user directory", 
   assert_true(type(wrote_lines) == "table" and wrote_lines[1] == "\\documentclass{article}", "Expected bootstrap to copy starter template content")
 end)
 
-run_test("template picker inserts static subfile template", function()
-  new_buffer()
+run_test("template picker excludes subfile template", function()
   local document_templates = require("latex-tools.templates")
-  local bundled_dir = nil
+  local bundled_dir = state.get_paths().template_dir
 
   with_stubs({
     [{ vim.fn, "isdirectory" }] = function(path)
-      if bundled_dir and path == bundled_dir then
+      if path == bundled_dir then
         return 1
       end
       return 0
@@ -554,41 +553,131 @@ run_test("template picker inserts static subfile template", function()
       return {}
     end,
     [{ vim.fn, "filereadable" }] = function(path)
-      if path:sub(-#"subfile.tex") == "subfile.tex" then
-        return 1
-      end
-      if path:sub(-#"assignment.tex") == "assignment.tex" then
-        return 1
-      end
-      return 0
+      return path:sub(-#".tex") == ".tex" and 1 or 0
     end,
     [{ vim.fn, "readfile" }] = function(path)
       if path:sub(-#"assignment.tex") == "assignment.tex" then
         return { "% latex-tools: course-aware" }
       end
-      if path:sub(-#"subfile.tex") == "subfile.tex" then
-        return { "\\documentclass[../main]{subfiles}", "\\begin{document}" }
+      return {}
+    end,
+  }, function()
+    local items = document_templates.list_templates()
+    for _, item in ipairs(items) do
+      assert_true(item.name ~= "subfile.tex", "Expected subfile.tex to be excluded from picker")
+    end
+    assert_true(#items >= 1, "Expected other templates to remain available")
+  end)
+end)
+
+run_test("subfile template rendering substitutes parent file name", function()
+  local subfiles = require("latex-tools.subfiles")
+  local rendered = subfiles.render_subfile_template({
+    "% !TEX root = ../main.tex",
+    "\\documentclass[../main]{subfiles}",
+  }, "/tmp/project/assignment-3.tex")
+
+  assert_contains(rendered, "% !TEX root = ../assignment-3.tex")
+  assert_contains(rendered, "\\documentclass[../assignment-3]{subfiles}")
+end)
+
+run_test("create subfile writes customized file and opens split", function()
+  new_buffer()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+    "% latex-tools: course-aware",
+    "\\documentclass{article}",
+  })
+
+  local mkdir_path = nil
+  local wrote_path = nil
+  local wrote_lines = nil
+  local split_cmd = nil
+  local bundled_dir = state.get_paths().template_dir
+
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return "/tmp/project/assignment-3.tex"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == "/tmp/project/assignment-3.tex" then
+        return 1
+      end
+      if path == bundled_dir .. "/subfile.tex" then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      if path == bundled_dir .. "/subfile.tex" then
+        return {
+          "% !TEX root = ../main.tex",
+          "\\documentclass[../main]{subfiles}",
+          "\\begin{document}",
+          "\\end{document}",
+        }
       end
       return {}
     end,
-    [{ vim.ui, "select" }] = function(items, _opts, on_choice)
-      local subfile = nil
-      for _, item in ipairs(items) do
-        if item.name == "subfile.tex" then
-          subfile = item
-          break
-        end
+    [{ vim.fn, "input" }] = function(prompt, _default)
+      if prompt:find("Subfile name", 1, true) then
+        return "chapter-one"
       end
-      assert_true(subfile ~= nil, "Expected subfile.tex in template picker")
-      on_choice(subfile)
+      return ""
+    end,
+    [{ vim.fn, "mkdir" }] = function(path, flag)
+      mkdir_path = path
+      assert_true(flag == "p", "Expected mkdir -p semantics")
+      return 1
+    end,
+    [{ vim.fn, "writefile" }] = function(lines, path)
+      wrote_lines = lines
+      wrote_path = path
+      return 0
+    end,
+    [{ vim, "cmd" }] = function(command)
+      split_cmd = command
     end,
   }, function()
-    bundled_dir = state.get_paths().template_dir
-    document_templates.insert_template()
+    require("latex-tools.subfiles").create_subfile()
   end)
 
-  local lines = get_buffer_lines()
-  assert_contains(lines, "\\documentclass[../main]{subfiles}")
+  assert_true(mkdir_path == "/tmp/project/subfile", "Expected subfile directory")
+  assert_true(wrote_path == "/tmp/project/subfile/chapter-one.tex", "Expected subfile path")
+  assert_contains(wrote_lines, "% !TEX root = ../assignment-3.tex")
+  assert_contains(wrote_lines, "\\documentclass[../assignment-3]{subfiles}")
+  assert_true(split_cmd:find("rightbelow vsplit", 1, true) ~= nil, "Expected right split")
+end)
+
+run_test("create subfile rejects unsaved course-aware buffer", function()
+  new_buffer()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "% latex-tools: course-aware" })
+
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return ""
+    end,
+  }, function()
+    require("latex-tools.subfiles").create_subfile()
+  end)
+end)
+
+run_test("create subfile rejects non-course-aware buffer", function()
+  new_buffer()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "\\documentclass{article}" })
+
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return "/tmp/project/assignment-3.tex"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      return path == "/tmp/project/assignment-3.tex" and 1 or 0
+    end,
+    [{ vim.fn, "input" }] = function()
+      error("input should not be called for non-course-aware buffer")
+    end,
+  }, function()
+    require("latex-tools.subfiles").create_subfile()
+  end)
 end)
 
 run_test("valid_date accepts ISO dates and rejects malformed values", function()

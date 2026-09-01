@@ -5,6 +5,7 @@ local tables = require("latex-tools.tables")
 local references = require("latex-tools.references")
 local assignment = require("latex-tools.assignment")
 local document_templates = require("latex-tools.templates")
+local subfiles = require("latex-tools.subfiles")
 local tex_snippets = require("latex-tools.tex_snippets")
 local tests = require("latex-tools.tests")
 local util = require("latex-tools.util")
@@ -83,6 +84,10 @@ end
 
 function M.insert_template()
   return document_templates.insert_template()
+end
+
+function M.create_subfile()
+  return subfiles.create_subfile()
 end
 
 function M.init_metadata(opts)

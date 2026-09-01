@@ -4,7 +4,8 @@ latex-tools.nvim is a Neovim plugin for consistently formatted LaTeX school work
 
 ## Features
 
-- **Document templates** — pick from bundled or user templates (`assignment.tex`, `subfile.tex`, and your own `.tex` files)
+- **Document templates** — pick from bundled or user templates (`assignment.tex` and your own `.tex` files)
+- **Subfile chapters** — create `subfiles` chapters from a saved course-aware parent document
 - **Course-aware rendering** — fill assignment templates from `courses.yaml` via Python
 - **Partial `.tex` snippets** — recursive picker for reusable blocks under `snippets/`
 - **Writing helpers** — figures, tables, footnotes, references, BibTeX keys, CSV import, Python/R/SQL listings
@@ -109,10 +110,18 @@ selection:
 Open a new buffer, then run `:LatexToolsTemplate` or `\ta`:
 
 - **assignment.tex (course-aware)** — pick a course, enter title and due date (`YYYY-MM-DD`), insert rendered document
-- **subfile.tex** — insert a `subfiles` chapter scaffold as-is
 - **your own `.tex` files** — any file in your templates directory
 
 Use `:LatexToolsAssignment` to skip the picker and go straight to the assignment flow.
+
+### 5. Add a subfile chapter
+
+From a **saved** course-aware parent document (with `% latex-tools: course-aware` near the top), run `:LatexToolsSubfile` or `\tS`:
+
+1. The plugin creates a `subfile/` directory next to the parent file if needed
+2. You are prompted for a chapter name
+3. A new `.tex` file is written under `subfile/` with the parent filename substituted into the bundled subfile template
+4. The new file opens in a vertical split to the right
 
 ## Templates vs snippets
 
@@ -138,6 +147,7 @@ Bundled templates live in the plugin's `templates/` directory. User copies in `l
 | Keymap | Action |
 | --- | --- |
 | `\ta` | Document template picker |
+| `\tS` | Create subfile chapter from saved course-aware document |
 | `\tx` | Custom `.tex` snippet picker |
 | `\tf` | Figure with image picker and caption |
 | `\tF` | Placeholder figure |
@@ -205,6 +215,7 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 | --- | --- |
 | `:LatexToolsTemplate` | Choose and insert a document template |
 | `:LatexToolsAssignment` | Insert a rendered assignment (skips template picker) |
+| `:LatexToolsSubfile` | Create a subfile chapter from the current course-aware document |
 | `:LatexToolsSnippet` | Choose and insert a custom `.tex` snippet |
 
 ### Writing helpers
@@ -250,6 +261,7 @@ Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `ini
 ### Insertion
 
 - `require("latex-tools").insert_template()`
+- `require("latex-tools").create_subfile()`
 - `require("latex-tools").insert_assignment_template()`
 - `require("latex-tools").insert_custom_snippet()`
 - `require("latex-tools").insert_figure_snippet()`

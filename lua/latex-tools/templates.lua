@@ -4,6 +4,10 @@ local util = require("latex-tools.util")
 
 local M = {}
 
+local HIDDEN_TEMPLATES = {
+  ["subfile.tex"] = true,
+}
+
 local function template_label(name, path)
   if util.is_course_aware_template(path) then
     return name .. " (course-aware)"
@@ -27,11 +31,14 @@ function M.list_templates()
 
   local function add_from_dir(directory, source_label)
     for _, path in ipairs(util.list_tex_files(directory, false)) do
-      local item = M.describe_template(path)
-      if source_label then
-        item.label = item.label .. " [" .. source_label .. "]"
+      local name = vim.fn.fnamemodify(path, ":t")
+      if not HIDDEN_TEMPLATES[name] then
+        local item = M.describe_template(path)
+        if source_label then
+          item.label = item.label .. " [" .. source_label .. "]"
+        end
+        by_name[item.name] = item
       end
-      by_name[item.name] = item
     end
   end
 

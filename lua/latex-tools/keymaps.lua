@@ -54,6 +54,10 @@ function M.setup(opts)
     require("latex-tools").insert_table_from_csv()
   end, "Insert Table from CSV")
 
+  map(prefix .. "S", function()
+    require("latex-tools").create_subfile()
+  end, "Create Subfile Chapter")
+
   map(prefix .. "p", function()
     require("latex-tools").insert_snippet("p")
   end, "Insert Python Code Snippet")
@@ -84,6 +88,7 @@ function M.setup(opts)
       { prefix .. "R", desc = "Reference to Label" },
       { prefix .. "k", desc = "BibTeX Citation Key" },
       { prefix .. "v", desc = "Table from CSV" },
+      { prefix .. "S", desc = "Create Subfile Chapter" },
       { prefix .. "p", desc = "Python Code" },
       { prefix .. "r", desc = "R Code" },
       { prefix .. "s", desc = "SQL Code" },

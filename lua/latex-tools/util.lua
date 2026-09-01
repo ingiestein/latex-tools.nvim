@@ -206,6 +206,49 @@ function M.parse_template_metadata(path)
   return metadata
 end
 
+function M.parse_buffer_metadata(buf)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, math.min(vim.api.nvim_buf_line_count(buf), 20), false)
+  local metadata = {}
+
+  for _, line in ipairs(lines) do
+    local value = line:match("^%%%s*latex%-tools:%s*(.+)%s*$")
+    if value then
+      local key, setting = value:match("^([^=]+)%s*=%s*(.+)$")
+      if key and setting then
+        metadata[key:match("^%s*(.-)%s*$")] = setting:match("^%s*(.-)%s*$")
+      else
+        metadata.type = value:match("^%s*(.-)%s*$")
+      end
+    end
+  end
+
+  return metadata
+end
+
+function M.is_course_aware_buffer(buf)
+  local metadata = M.parse_buffer_metadata(buf or 0)
+  return metadata.type == "course-aware"
+end
+
+function M.get_saved_buffer_path(buf)
+  buf = buf or 0
+  local path = vim.api.nvim_buf_get_name(buf)
+  if path == "" or vim.fn.filereadable(path) ~= 1 then
+    return nil
+  end
+  return path
+end
+
+function M.sanitize_filename(value)
+  local name = value:gsub("^%s+", ""):gsub("%s+$", "")
+  name = name:gsub("%.tex$", "")
+  name = M.slugify(name)
+  if name == "" then
+    return nil
+  end
+  return name .. ".tex"
+end
+
 function M.is_course_aware_template(path)
   local metadata = M.parse_template_metadata(path)
   return metadata.type == "course-aware"

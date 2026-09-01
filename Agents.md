@@ -11,6 +11,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - `config.lua` — User options (keymaps, commands, path overrides); warns on `python_script_path` override
   - `state.lua` — Path resolution, user-file bootstrapping, `run_command()` with sanitized errors
   - `templates.lua` — Document template discovery, `% latex-tools:` metadata parsing, unified picker
+  - `subfiles.lua` — Subfile chapter creation from saved course-aware parent buffers
   - `assignment.lua` — Course picker + Python-driven rendering for course-aware templates
   - `figures.lua` / `tables.lua` — Interactive snippet builders (UI select + input)
   - `references.lua` — Label/`\ref` picker + BibTeX key picker (parses `.bib` and buffer labels)
@@ -42,9 +43,10 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - `:LatexToolsInit!` overwrites metadata and templates but never removes snippets
   - Older names (`init_course_metadata`, `init_user_templates`, `init_user_files`, etc.) remain as aliases
 - **Document templates vs snippets**:
-  - Templates: full documents/chapters in `templates/*.tex`; inserted via `:LatexToolsTemplate` / `\ta`
+  - Templates: full documents in `templates/*.tex`; inserted via `:LatexToolsTemplate` / `\ta`
+  - Subfiles: created via `:LatexToolsSubfile` / `\tS` from a saved buffer containing `% latex-tools: course-aware`; writes `subfile/<name>.tex` beside the parent and opens it in a right split
   - Snippets: partial blocks in `snippets/**/*.tex`; inserted via `:LatexToolsSnippet` / `\tx`
-  - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; no code change required for new static templates
+  - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; `subfile.tex` is bundled but excluded from the template picker
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline, `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.
 - **Validation**: Assignment due dates must pass `util.valid_date()` (`YYYY-MM-DD`, including leap years) before rendering.
@@ -61,6 +63,10 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 3. Register in `commands.lua` and `keymaps.lua`.
 4. Add test case in `templates_spec.lua`.
 5. Update README.md Commands/Keymaps sections and the `Unreleased` section of `CHANGELOG.md`.
+
+**Add a subfile chapter**
+- Parent buffer must contain `% latex-tools: course-aware` and be saved to disk.
+- `subfiles.lua` prompts for a name, creates `subfile/` beside the parent, writes from bundled `subfile.tex`, substitutes the parent filename for `main.tex` / `../main`, and opens the result with `rightbelow vsplit`.
 
 **Add a document template**
 - Bundled default: add `templates/your-template.tex`.

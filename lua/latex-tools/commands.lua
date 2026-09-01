@@ -45,6 +45,10 @@ function M.setup()
     require("latex-tools").init_all({ force = opts.bang })
   end, { bang = true, desc = "Initialize metadata, templates, and snippets" })
 
+  vim.api.nvim_create_user_command("LatexToolsSubfile", function()
+    require("latex-tools").create_subfile()
+  end, { desc = "Create a subfile from the current course-aware document" })
+
   vim.api.nvim_create_user_command("LatexToolsSnippet", function()
     require("latex-tools").insert_custom_snippet()
   end, { desc = "Insert a custom LaTeX snippet" })
