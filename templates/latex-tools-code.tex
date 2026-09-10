@@ -1,0 +1,117 @@
+% latex-tools-code.tex
+% Project-local Markdown-like code fences (default backend: tcolorbox + listings).
+% Copied beside each course-aware document; edit freely for that project.
+%
+% API (backend-agnostic — same surface in latex-tools-code-minted.tex):
+%   \begin{mdcode}{Python} ... \end{mdcode}
+%   \begin{mdcode}{Python}[listing options={numbers=left}] ... \end{mdcode}
+%   \begin{python} ... \end{python}   % thin wrappers for common langs
+%   \begin{rcode} ... \end{rcode}
+%   \begin{sql} ... \end{sql}
+%
+% Opt-in minted+Pygments: in the parent, swap to
+%   \input{latex-tools-code-minted}
+% (requires pygmentize on PATH and compile with -shell-escape).
+
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+
+% --- listings language skins (known langs); mdcode falls back to base ---
+\lstdefinestyle{latextoolsbase}{
+  basicstyle=\ttfamily\small,
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=2,
+  columns=fullflexible,
+  keepspaces=true,
+  numbers=none
+}
+
+\lstdefinestyle{latextoolspython}{
+  style=latextoolsbase,
+  language=Python,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+\lstdefinestyle{latextoolsr}{
+  style=latextoolsbase,
+  language=R,
+  keywordstyle=\color{purple!65!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+\lstdefinestyle{latextoolssql}{
+  style=latextoolsbase,
+  language=SQL,
+  keywordstyle=\color{orange!75!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+% --- shared Markdown / GitHub-inspired chrome (keep in sync with minted companion) ---
+\tcbset{
+  latextoolscode/.style={
+    enhanced,
+    breakable,
+    colback=gray!6,
+    colframe=gray!35,
+    boxrule=0.4pt,
+    arc=2pt,
+    left=6pt,
+    right=6pt,
+    top=4pt,
+    bottom=4pt,
+    boxsep=2pt,
+    fonttitle=\ttfamily\footnotesize\bfseries,
+    coltitle=gray!15!black,
+    colbacktitle=gray!18,
+    toptitle=2pt,
+    bottomtitle=2pt,
+    lefttitle=6pt,
+    righttitle=6pt,
+  },
+  % Optional: \begin{mdcode}{Python}[latextoolsnumbers]
+  latextoolsnumbers/.style={
+    listing options={numbers=left,numberstyle=\tiny\color{gray!70},numbersep=8pt}
+  },
+}
+
+% Generic fence: \begin{mdcode}{Lang}[tcb options] ... \end{mdcode}
+% Lang should be a listings language name (Python, R, SQL, Java, ...) when known.
+\DeclareTCBListing{mdcode}{ O{} m }{%
+  latextoolscode,
+  title=#2,
+  listing only,
+  listing options={style=latextoolsbase,language=#2},
+  #1
+}
+
+% Thin wrappers (styled skins) for Neovim \tp / \tr / \ts
+\newtcblisting{python}[1][]{%
+  latextoolscode,
+  title=python,
+  listing only,
+  listing options={style=latextoolspython},
+  #1
+}
+
+\newtcblisting{rcode}[1][]{%
+  latextoolscode,
+  title=r,
+  listing only,
+  listing options={style=latextoolsr},
+  #1
+}
+
+\newtcblisting{sql}[1][]{%
+  latextoolscode,
+  title=sql,
+  listing only,
+  listing options={style=latextoolssql},
+  #1
+}

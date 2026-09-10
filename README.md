@@ -8,7 +8,8 @@ latex-tools.nvim is a Neovim plugin for consistently formatted LaTeX school work
 - **Subfile chapters** — create `subfiles` chapters from a saved course-aware parent document
 - **Course-aware rendering** — fill assignment templates from `courses.yaml` via Python
 - **Partial `.tex` snippets** — recursive picker for reusable blocks under `snippets/`
-- **Writing helpers** — figures, tables, footnotes, references, BibTeX keys, CSV import, Python/R/SQL listings
+- **Writing helpers** — figures, tables, footnotes, references, BibTeX keys, CSV import, Markdown-like Python/R/SQL code fences
+- **Project-local companions** — course-aware create copies `latex-tools-code.tex` and `latex-tools-code-minted.tex` beside the saved parent (editable per document)
 - **Granular setup** — initialize metadata, templates, or snippets independently
 
 ## Getting Started
@@ -66,13 +67,15 @@ You can also initialize each part separately:
 
 ```vim
 :LatexToolsInitMetadata     " courses.yaml only
-:LatexToolsInitTemplates     " document templates only
+:LatexToolsInitTemplates     " create missing document templates only
 :LatexToolsInitSnippets      " snippets directory only
-:LatexToolsInitTemplates!    " overwrite templates without touching courses.yaml
-:LatexToolsInit!             " overwrite metadata and templates; never removes snippets
+:LatexToolsInitTemplates!    " back up existing library files, then refresh from plugin
+:LatexToolsInit!             " backup-refresh templates; overwrite courses.yaml; never removes snippets
 ```
 
 Aliases: `:LatexToolsInitCourses` → `:LatexToolsInitMetadata`, `:LatexToolsInitAssignment` → `:LatexToolsInitTemplates`.
+
+`:LatexToolsInitTemplates!` moves conflicting files from `latex-tools/templates/` into a timestamped sibling folder `latex-tools/templates-backup/<YYYYMMDD-HHMMSS>/`, then writes fresh bundled copies. User-only `.tex` files that are not in the plugin bundle stay in `templates/` untouched. Compare the backup folder to the new defaults and copy back any personal edits you still want.
 
 ### 3. Add your courses
 
@@ -105,14 +108,28 @@ selection:
   active_due_date: 2026-08-15
 ```
 
-### 4. Insert a document template
+### 4. Insert a course-aware assignment
 
-Open a new buffer, then run `:LatexToolsTemplate` or `\ta`:
+**Save the buffer first** (e.g. `assignment.tex` in your project folder). Then run `:LatexToolsTemplate` / `\ta` and pick `assignment.tex (course-aware)`, or use `:LatexToolsAssignment`.
 
-- **assignment.tex (course-aware)** — pick a course, enter title and due date (`YYYY-MM-DD`), insert rendered document
-- **your own `.tex` files** — any file in your templates directory
+The plugin:
 
-Use `:LatexToolsAssignment` to skip the picker and go straight to the assignment flow.
+1. Prompts for course, title, and due date
+2. Inserts the rendered parent document (thin shell: metadata, title, `\input{latex-tools-code}`)
+3. Copies project companions beside the file when missing (`latex-tools-code.tex` and `latex-tools-code-minted.tex`) so you can edit styles for that document only
+
+Documents never `\input` the plugin package path. Companions come from your user template library (or bundled defaults) into the project folder.
+
+Example layout:
+
+```text
+my-assignment/
+  assignment.tex
+  latex-tools-code.tex
+  latex-tools-code-minted.tex
+  subfile/
+    chapter-one.tex
+```
 
 ### 5. Add a subfile chapter
 
@@ -142,6 +159,54 @@ The picker will run the course/title/due-date flow and render it with `courses.y
 
 Bundled templates live in the plugin's `templates/` directory. User copies in `latex-tools/templates/` override bundled files by filename. A legacy `latex-tools/assignment.tex` path is still honored if you have not migrated yet.
 
+`subfile.tex` and `latex-tools-code.tex` are bundled helpers excluded from the document template picker.
+
+### Code fences
+
+Course-aware parents `\input{latex-tools-code}` by default (the **project-local** copy). On create, both companions are copied beside the parent:
+
+- `latex-tools-code.tex` — portable `tcolorbox` + `listings` (default; no shell-escape)
+- `latex-tools-code-minted.tex` — `tcolorbox` + `minted` + Pygments (opt-in)
+
+**API** (same in both backends):
+
+```tex
+\begin{mdcode}{Python}
+print("hello")
+\end{mdcode}
+
+\begin{python}
+import pandas as pd
+\end{python}
+
+\begin{rcode}
+summary(df)
+\end{rcode}
+
+\begin{sql}
+SELECT 1;
+\end{sql}
+```
+
+Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `\ts` insert the short wrappers.
+
+**Opt in to minted** (needs `pygmentize` on PATH and `-shell-escape`):
+
+```vim
+:LatexToolsUseMinted
+```
+
+Restore listings with `:LatexToolsUseMinted!`. Or edit the parent `\input{...}` line by hand.
+
+Example `latexmkrc` snippet for minted:
+
+```perl
+$pdflatex = 'xelatex -shell-escape %O %S';
+$xelatex  = 'xelatex -shell-escape %O %S';
+```
+
+Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsInitTemplates!` to refresh the **user library** (with backup); that does not change companions already copied into an existing project.
+
 ## Everyday Tools
 
 | Keymap | Action |
@@ -157,7 +222,7 @@ Bundled templates live in the plugin's `templates/` directory. User copies in `l
 | `\tR` | Reference to a buffer label |
 | `\tk` | BibTeX citation key |
 | `\tv` | Table from CSV |
-| `\tp` / `\tr` / `\ts` | Python / R / SQL listing blocks |
+| `\tp` / `\tr` / `\ts` | Python / R / SQL Markdown-like code fences |
 | `\tT` | Run tests |
 
 ## Configuration
@@ -204,7 +269,7 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 | --- | --- |
 | `:LatexToolsInit[!]` | Initialize metadata, templates, and snippets |
 | `:LatexToolsInitMetadata[!]` | Create `courses.yaml` from bundled example |
-| `:LatexToolsInitTemplates[!]` | Create document templates from bundled `.tex` files |
+| `:LatexToolsInitTemplates[!]` | Create missing templates; bang backs up then refreshes from plugin |
 | `:LatexToolsInitSnippets` | Create the snippets directory |
 | `:LatexToolsInitCourses[!]` | Alias for `:LatexToolsInitMetadata[!]` |
 | `:LatexToolsInitAssignment[!]` | Alias for `:LatexToolsInitTemplates[!]` |
@@ -216,6 +281,7 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 | `:LatexToolsTemplate` | Choose and insert a document template |
 | `:LatexToolsAssignment` | Insert a rendered assignment (skips template picker) |
 | `:LatexToolsSubfile` | Create a subfile chapter from the current course-aware document |
+| `:LatexToolsUseMinted[!]` | Switch parent to minted fences (`!` restores listings) |
 | `:LatexToolsSnippet` | Choose and insert a custom `.tex` snippet |
 
 ### Writing helpers
@@ -262,6 +328,7 @@ Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `ini
 
 - `require("latex-tools").insert_template()`
 - `require("latex-tools").create_subfile()`
+- `require("latex-tools").use_minted_companion({ minted = true|false })`
 - `require("latex-tools").insert_assignment_template()`
 - `require("latex-tools").insert_custom_snippet()`
 - `require("latex-tools").insert_figure_snippet()`

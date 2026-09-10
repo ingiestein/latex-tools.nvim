@@ -15,14 +15,15 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - `assignment.lua` — Course picker + Python-driven rendering for course-aware templates
   - `figures.lua` / `tables.lua` — Interactive snippet builders (UI select + input)
   - `references.lua` — Label/`\ref` picker + BibTeX key picker (parses `.bib` and buffer labels)
-  - `snippets.lua` — Pre-canned Python/R/SQL `lstlisting` blocks
+  - `code_fences.lua` — Toggle listings vs minted companion `\input` (`:LatexToolsUseMinted[!]`)
+  - `snippets.lua` — Pre-canned Python/R/SQL fence wrappers (`python` / `rcode` / `sql`)
   - `tex_snippets.lua` — Recursive picker for user-managed `.tex` snippet files
   - `util.lua` — Shared helpers (insertion, escaping, CSV parsing, slugify, file listing, date validation, message sanitization, template metadata)
   - `commands.lua` — `:LatexTools*` user commands
   - `keymaps.lua` — `\<prefix>` mappings (default `\t`) + which-key integration
   - `tests.lua` — `:LatexToolsTest` wrapper
 - `python/render_template.py` — YAML parser and LaTeX command replacement for course-aware templates
-- `templates/` — Bundled defaults (`courses.yaml`, `assignment.tex`, `subfile.tex`)
+- `templates/` — Bundled defaults (`courses.yaml`, `assignment.tex`, `subfile.tex`, `latex-tools-code.tex`, `latex-tools-code-minted.tex`)
 - `.github/workflows/` — CI on pushes/pull requests and tagged GitHub releases
 - `tests/templates_spec.lua` — Comprehensive headless regression suite (uses `nvim --headless -l`)
 
@@ -35,18 +36,20 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - custom snippets from `stdpath("config")/latex-tools/snippets/`
   - assignment rendering via `tex_template_path`, preferring `templates/assignment.tex`, then legacy `latex-tools/assignment.tex`, then bundled
   - Respect configured path overrides in `config.lua`.
+- **Project-local companions**: Course-aware insert requires a saved buffer. `state.ensure_project_companions(parent_path)` copies `latex-tools-code.tex` and `latex-tools-code-minted.tex` beside the parent from the user template library (fallback: bundled). Never write absolute plugin/`stdpath` `\input` paths into documents. Do not overwrite existing project companions. Default `\input{latex-tools-code}`; opt-in minted via `\input{latex-tools-code-minted}` or `:LatexToolsUseMinted` / `:LatexToolsUseMinted!`.
 - **User file initialization**:
   - `init_metadata(opts)` / `:LatexToolsInitMetadata[!]` — `courses.yaml` only
-  - `init_templates(opts)` / `:LatexToolsInitTemplates[!]` — all bundled `.tex` files into user templates dir
+  - `init_templates(opts)` / `:LatexToolsInitTemplates[!]` — missing files only; bang **moves** conflicting user library files to `latex-tools/templates-backup/<timestamp>/` then writes fresh bundled copies. User-only extras in `templates/` are never removed.
   - `init_snippets()` / `:LatexToolsInitSnippets` — snippets directory only
   - `init_all(opts)` / `:LatexToolsInit[!]` — all of the above; `opts` may set `metadata`, `templates`, `snippets`, and `force` individually
-  - `:LatexToolsInit!` overwrites metadata and templates but never removes snippets
+  - `:LatexToolsInit!` backup-refreshes templates and may overwrite metadata; never removes snippets
   - Older names (`init_course_metadata`, `init_user_templates`, `init_user_files`, etc.) remain as aliases
 - **Document templates vs snippets**:
   - Templates: full documents in `templates/*.tex`; inserted via `:LatexToolsTemplate` / `\ta`
   - Subfiles: created via `:LatexToolsSubfile` / `\tS` from a saved buffer containing `% latex-tools: course-aware`; writes `subfile/<name>.tex` beside the parent and opens it in a right split
   - Snippets: partial blocks in `snippets/**/*.tex`; inserted via `:LatexToolsSnippet` / `\tx`
-  - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; `subfile.tex` is bundled but excluded from the template picker
+  - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; `subfile.tex`, `latex-tools-code.tex`, and `latex-tools-code-minted.tex` are excluded from the template picker
+  - Fence API: `\begin{mdcode}{Lang}` plus wrappers `python` / `rcode` / `sql` (listings default; minted opt-in)
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline, `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.
 - **Validation**: Assignment due dates must pass `util.valid_date()` (`YYYY-MM-DD`, including leap years) before rendering.
