@@ -23,7 +23,10 @@ function M.setup()
 
   vim.api.nvim_create_user_command("LatexToolsInitMetadata", function(opts)
     require("latex-tools").init_metadata({ force = opts.bang })
-  end, { bang = true, desc = "Create user course metadata from the bundled example" })
+  end, {
+    bang = true,
+    desc = "Create courses.yaml (bang: back up existing then refresh from plugin)",
+  })
 
   vim.api.nvim_create_user_command("LatexToolsInitCourses", function(opts)
     require("latex-tools").init_metadata({ force = opts.bang })
@@ -48,7 +51,7 @@ function M.setup()
     require("latex-tools").init_all({ force = opts.bang })
   end, {
     bang = true,
-    desc = "Initialize metadata, templates, and snippets (bang: backup-refresh templates; overwrite metadata)",
+    desc = "Initialize metadata, templates, and snippets (bang: backup-refresh both)",
   })
 
   vim.api.nvim_create_user_command("LatexToolsSubfile", function()

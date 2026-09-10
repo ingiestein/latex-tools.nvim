@@ -36,13 +36,15 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - custom snippets from `stdpath("config")/latex-tools/snippets/`
   - assignment rendering via `tex_template_path`, preferring `templates/assignment.tex`, then legacy `latex-tools/assignment.tex`, then bundled
   - Respect configured path overrides in `config.lua`.
-- **Project-local companions**: Course-aware insert requires a saved buffer. `state.ensure_project_companions(parent_path)` copies `latex-tools-code.tex` and `latex-tools-code-minted.tex` beside the parent from the user template library (fallback: bundled). Never write absolute plugin/`stdpath` `\input` paths into documents. Do not overwrite existing project companions. Default `\input{latex-tools-code}`; opt-in minted via `\input{latex-tools-code-minted}` or `:LatexToolsUseMinted` / `:LatexToolsUseMinted!`.
+- **Project-local companions**: Course-aware insert requires a saved buffer. `state.ensure_project_companions(parent_path)` copies `latex-tools-code.tex` and `latex-tools-code-minted.tex` beside the parent from the user template library (fallback: bundled). Never write absolute plugin/`stdpath` `\input` paths into documents. Do not overwrite existing project companions. Default `\input{latex-tools-code}`; opt-in minted via `\input{latex-tools-code-minted}` or `:LatexToolsUseMinted` / `:LatexToolsUseMinted!`. Minted needs a working `latexminted` on PATH (see README macOS Homebrew section); listings companion needs no Python/shell-escape.
 - **User file initialization**:
-  - `init_metadata(opts)` / `:LatexToolsInitMetadata[!]` — `courses.yaml` only
-  - `init_templates(opts)` / `:LatexToolsInitTemplates[!]` — missing files only; bang **moves** conflicting user library files to `latex-tools/templates-backup/<timestamp>/` then writes fresh bundled copies. User-only extras in `templates/` are never removed.
+  - `init_metadata(opts)` / `:LatexToolsInitMetadata[!]` — create `courses.yaml` if missing; bang **moves** the existing file to `latex-tools/metadata-backup/<timestamp>/courses.yaml` then writes the bundled starter
+  - `init_templates(opts)` / `:LatexToolsInitTemplates[!]` — missing files only; bang **moves** conflicting user library files to `latex-tools/templates-backup/<timestamp>/` then writes fresh bundled copies. User-only extras in `templates/` are never removed
   - `init_snippets()` / `:LatexToolsInitSnippets` — snippets directory only
   - `init_all(opts)` / `:LatexToolsInit[!]` — all of the above; `opts` may set `metadata`, `templates`, `snippets`, and `force` individually
-  - `:LatexToolsInit!` backup-refreshes templates and may overwrite metadata; never removes snippets
+  - `:LatexToolsInit!` backup-refreshes **both** templates and `courses.yaml`; never removes snippets
+  - Backup dirs are siblings of `templates/` / `courses.yaml` (not nested inside `templates/`), so the document picker never lists backups
+  - Init bangs refresh the **user library** only; they do not overwrite project-local companions beside an existing paper
   - Older names (`init_course_metadata`, `init_user_templates`, `init_user_files`, etc.) remain as aliases
 - **Document templates vs snippets**:
   - Templates: full documents in `templates/*.tex`; inserted via `:LatexToolsTemplate` / `\ta`

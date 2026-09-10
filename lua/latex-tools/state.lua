@@ -137,8 +137,20 @@ local function user_templates_backup_root()
   return user_config_dir() .. "/templates-backup"
 end
 
+local function user_metadata_backup_root()
+  return user_config_dir() .. "/metadata-backup"
+end
+
+local function new_timestamped_backup_dir(root)
+  return root .. "/" .. os.date("%Y%m%d-%H%M%S")
+end
+
 local function new_templates_backup_dir()
-  return user_templates_backup_root() .. "/" .. os.date("%Y%m%d-%H%M%S")
+  return new_timestamped_backup_dir(user_templates_backup_root())
+end
+
+local function new_metadata_backup_dir()
+  return new_timestamped_backup_dir(user_metadata_backup_root())
 end
 
 local function relocate_to_backup(path, backup_dir)
@@ -152,6 +164,10 @@ end
 
 function M.get_user_templates_backup_root()
   return user_templates_backup_root()
+end
+
+function M.get_user_metadata_backup_root()
+  return user_metadata_backup_root()
 end
 
 function M.initialize_user_templates(opts)
@@ -256,12 +272,52 @@ function M.initialize_course_metadata(opts)
     destination = user_yaml_path()
   end
 
-  return copy_bundled_file({
+  local backup_dir = nil
+  local backed_up = nil
+
+  if options.force and is_readable(destination) then
+    backup_dir = new_metadata_backup_dir()
+    backed_up = relocate_to_backup(destination, backup_dir)
+    if not backed_up then
+      vim.notify("Unable to back up " .. destination, vim.log.levels.ERROR)
+      return nil
+    end
+  elseif is_readable(destination) and not options.force then
+    vim.notify(
+      "Course metadata already exists at "
+        .. destination
+        .. ". Use :LatexToolsInitMetadata! to back up the existing file and refresh from the plugin.",
+      vim.log.levels.WARN
+    )
+    local result = { destination }
+    result.backed_up = nil
+    result.backup_dir = nil
+    return result
+  end
+
+  local path, status = copy_bundled_file({
     source = bundled_yaml_path,
     destination = destination,
-    force = options.force,
+    force = false,
     label = "Course metadata",
+    quiet = options.force and backed_up ~= nil,
   })
+
+  if not path then
+    return nil
+  end
+
+  if options.force and backed_up then
+    vim.notify(
+      string.format("Refreshed course metadata at %s; backed up previous file to %s", path, backed_up),
+      vim.log.levels.INFO
+    )
+  end
+
+  local result = { path }
+  result.backed_up = backed_up
+  result.backup_dir = backup_dir
+  return result
 end
 
 function M.initialize_custom_snippets_dir()

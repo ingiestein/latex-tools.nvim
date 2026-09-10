@@ -62,20 +62,32 @@ This creates:
 | `~/.config/nvim/latex-tools/courses.yaml` | Your profile and course catalog |
 | `~/.config/nvim/latex-tools/templates/` | Document templates (`assignment.tex`, `subfile.tex`, …) |
 | `~/.config/nvim/latex-tools/snippets/` | Reusable partial `.tex` blocks |
+| `~/.config/nvim/latex-tools/templates-backup/` | Timestamped backups from `:LatexToolsInitTemplates!` |
+| `~/.config/nvim/latex-tools/metadata-backup/` | Timestamped backups from `:LatexToolsInitMetadata!` |
 
 You can also initialize each part separately:
 
 ```vim
-:LatexToolsInitMetadata     " courses.yaml only
+:LatexToolsInitMetadata     " create courses.yaml only if missing
 :LatexToolsInitTemplates     " create missing document templates only
 :LatexToolsInitSnippets      " snippets directory only
 :LatexToolsInitTemplates!    " back up existing library files, then refresh from plugin
-:LatexToolsInit!             " backup-refresh templates; overwrite courses.yaml; never removes snippets
+:LatexToolsInitMetadata!     " back up existing courses.yaml, then refresh from plugin
+:LatexToolsInit!             " backup-refresh templates and courses.yaml; never removes snippets
 ```
 
 Aliases: `:LatexToolsInitCourses` → `:LatexToolsInitMetadata`, `:LatexToolsInitAssignment` → `:LatexToolsInitTemplates`.
 
-`:LatexToolsInitTemplates!` moves conflicting files from `latex-tools/templates/` into a timestamped sibling folder `latex-tools/templates-backup/<YYYYMMDD-HHMMSS>/`, then writes fresh bundled copies. User-only `.tex` files that are not in the plugin bundle stay in `templates/` untouched. Compare the backup folder to the new defaults and copy back any personal edits you still want.
+**Backup locations** (siblings of the live files, never nested inside them so pickers stay clean):
+
+| Bang command | Moves conflicts into |
+| --- | --- |
+| `:LatexToolsInitTemplates!` | `latex-tools/templates-backup/<YYYYMMDD-HHMMSS>/` |
+| `:LatexToolsInitMetadata!` | `latex-tools/metadata-backup/<YYYYMMDD-HHMMSS>/courses.yaml` |
+
+`:LatexToolsInitTemplates!` only moves **bundled** basenames that already exist in `templates/`. User-only `.tex` files that are not in the plugin bundle stay in `templates/` untouched. `:LatexToolsInitMetadata!` moves the existing `courses.yaml` aside, then writes the bundled starter. Compare the backup folder to the new defaults and copy back any personal edits you still want.
+
+**Do not confuse** library refresh with project companions: re-running init bangs does **not** overwrite `latex-tools-code*.tex` already copied beside a paper.
 
 ### 3. Add your courses
 
@@ -190,7 +202,7 @@ SELECT 1;
 
 Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `\ts` insert the short wrappers.
 
-**Opt in to minted** (needs `pygmentize` on PATH and `-shell-escape`):
+**Opt in to minted**:
 
 ```vim
 :LatexToolsUseMinted
@@ -198,14 +210,116 @@ Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `
 
 Restore listings with `:LatexToolsUseMinted!`. Or edit the parent `\input{...}` line by hand.
 
-Example `latexmkrc` snippet for minted:
+Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsInitTemplates!` to refresh the **user library** (with backup); that does not change companions already copied into an existing project.
 
-```perl
-$pdflatex = 'xelatex -shell-escape %O %S';
-$xelatex  = 'xelatex -shell-escape %O %S';
+#### Minted setup (macOS / Homebrew)
+
+Minted needs a working `latexminted` executable (minted 3+). Failures usually look like:
+
+```text
+Package minted Error: minted v3+ executable is not installed, is not added to PATH,
+  or is not permitted with restricted shell escape; ...
+Package minted Error: Missing definition for highlighting style "friendly"
+  (minted executable is unavailable or disabled); ...
 ```
 
-Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsInitTemplates!` to refresh the **user library** (with backup); that does not change companions already copied into an existing project.
+Those lines mean the highlighter did not run successfully—not that the `friendly` style name in the companion is wrong.
+
+**1. Install Pygments (optional but useful)**
+
+```bash
+brew install pygments
+pygmentize -V
+```
+
+**2. Make `latexminted` work with Homebrew Python**
+
+MacTeX / TeX Live 2025 currently ships `minted.sty` **v3.7.0** and TeX Live’s `latexminted` **0.6.0**. Two common traps:
+
+| Approach | Problem on current Homebrew + MacTeX 2025 |
+| --- | --- |
+| TeX Live `/Library/TeX/texbin/latexminted` via `env python3` | Homebrew `python3` **3.14** crashes it (`ArgParser ... 'color'`) |
+| `pipx install latexminted` (latest **0.7+**) | Requires `minted.sty >= 3.8.0`, but MacTeX still has **3.7.0** → `canexec` stays false |
+
+Reliable fix: a small wrapper that runs TeX Live’s script under **Python 3.13**, earlier on `PATH` than `/Library/TeX/texbin`:
+
+```bash
+brew install python@3.13
+
+mkdir -p ~/.local/bin
+cat > ~/.local/bin/latexminted << 'EOF'
+#!/bin/sh
+exec /opt/homebrew/bin/python3.13 \
+  /usr/local/texlive/2025/texmf-dist/scripts/minted/latexminted.py \
+  "$@"
+EOF
+chmod +x ~/.local/bin/latexminted
+
+# If you previously installed the mismatched pipx app:
+#   pipx uninstall latexminted
+
+hash -r
+which -a latexminted   # ~/.local/bin/latexminted must be first
+latexminted --version  # expect 0.6.0 with MacTeX 2025
+```
+
+Adjust the `latexminted.py` path if your TeX Live year/arch differs (`ls /usr/local/texlive/*/texmf-dist/scripts/minted/latexminted.py`).
+
+**3. Compile with `-shell-escape` (VimTeX / latexmk)**
+
+Unrestricted shell escape lets TeX use your full `PATH` (so the wrapper wins). Project `.latexmkrc`:
+
+```perl
+$xelatex  = 'xelatex -shell-escape %O %S';
+$pdflatex = 'pdflatex -shell-escape %O %S';
+$lualatex = 'lualatex -shell-escape %O %S';
+```
+
+Or in Neovim VimTeX config:
+
+```lua
+vim.g.vimtex_compiler_latexmk = {
+  options = {
+    "-verbose",
+    "-file-line-error",
+    "-synctex=1",
+    "-interaction=nonstopmode",
+    "-shell-escape",
+  },
+}
+
+-- Ensure VimTeX/latexmk see the wrapper (important for GUI-launched Neovim)
+vim.env.PATH = table.concat({
+  vim.fn.expand("~/.local/bin"),
+  "/opt/homebrew/bin",
+  "/Library/TeX/texbin",
+  vim.env.PATH,
+}, ":")
+```
+
+Restart Neovim, stop any old continuous compile (`\lk`), then `\ll`.
+
+**4. Check PATH / `latexminted` from inside Neovim**
+
+`:!` output can flash away. Prefer one of:
+
+```vim
+:terminal which -a latexminted; latexminted --version; pygmentize -V
+```
+
+Or capture into the message log:
+
+```vim
+:echom system('which -a latexminted')
+:echom system('latexminted --version')
+:messages
+```
+
+`:messages` scrolls the output. `\li` shows the VimTeX latexmk command (confirm `-shell-escape` is present).
+
+**5. Prefer listings when you do not need Pygments**
+
+The default companion (`latex-tools-code.tex`) needs no Python and no shell escape. Use `:LatexToolsUseMinted!` to switch back.
 
 ## Everyday Tools
 
@@ -268,7 +382,7 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 | Command | Description |
 | --- | --- |
 | `:LatexToolsInit[!]` | Initialize metadata, templates, and snippets |
-| `:LatexToolsInitMetadata[!]` | Create `courses.yaml` from bundled example |
+| `:LatexToolsInitMetadata[!]` | Create `courses.yaml` if missing; bang backs up then refreshes from plugin |
 | `:LatexToolsInitTemplates[!]` | Create missing templates; bang backs up then refreshes from plugin |
 | `:LatexToolsInitSnippets` | Create the snippets directory |
 | `:LatexToolsInitCourses[!]` | Alias for `:LatexToolsInitMetadata[!]` |

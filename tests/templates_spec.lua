@@ -473,7 +473,7 @@ run_test("course metadata bootstrap writes starter file to user config", functio
     end,
   }, function()
     local result = templates.init_course_metadata()
-    assert_true(result == destination, "Expected bootstrap to target the user config YAML")
+    assert_true(result[1] == destination, "Expected bootstrap to target the user config YAML")
   end)
 
   assert_true(mkdir_path == "/tmp/nvim-config/latex-tools", "Expected bootstrap to create the config directory")
@@ -627,6 +627,86 @@ run_test("non-force template init skips existing files without backup", function
     assert_true(result[1] == destination, "Expected existing path returned as skipped/copied entry")
     assert_true(result.backup_dir == nil, "Expected no backup dir without force")
     assert_true(#(result.backed_up or {}) == 0, "Expected no backups without force")
+  end)
+
+  assert_true(rename_called == false, "Expected rename not called without force")
+end)
+
+run_test("force metadata refresh backs up courses.yaml then writes fresh copy", function()
+  local destination = "/tmp/nvim-config/latex-tools/courses.yaml"
+  local bundled = state.get_paths().template_dir .. "/courses.yaml"
+  local renamed_from = nil
+  local renamed_to = nil
+  local wrote_path = nil
+  local existing = {
+    [destination] = true,
+    [bundled] = true,
+  }
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      return existing[path] and 1 or 0
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      assert_true(path == bundled, "Unexpected source YAML path")
+      return { "academic_profile:", "  institution: Fresh University" }
+    end,
+    [{ vim.fn, "writefile" }] = function(_lines, path)
+      wrote_path = path
+      existing[path] = true
+      return 0
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flag)
+      return 1
+    end,
+    [{ vim.fn, "rename" }] = function(from, to)
+      renamed_from = from
+      renamed_to = to
+      existing[from] = nil
+      existing[to] = true
+      return 0
+    end,
+  }, function()
+    local result = templates.init_metadata({ force = true })
+    assert_true(result[1] == destination, "Expected refreshed courses.yaml path")
+    assert_true(type(result.backup_dir) == "string", "Expected backup_dir on result")
+    assert_true(result.backup_dir:find("metadata%-backup/", 1) ~= nil, "Expected metadata-backup path")
+    assert_true(result.backed_up == result.backup_dir .. "/courses.yaml", "Expected backed up courses.yaml")
+  end)
+
+  assert_true(renamed_from == destination, "Expected existing courses.yaml moved to backup")
+  assert_true(renamed_to:find("metadata%-backup/", 1) ~= nil, "Expected rename into metadata-backup")
+  assert_true(wrote_path == destination, "Expected fresh courses.yaml written")
+end)
+
+run_test("non-force metadata init skips existing courses.yaml without backup", function()
+  local destination = "/tmp/nvim-config/latex-tools/courses.yaml"
+  local rename_called = false
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == destination then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "rename" }] = function(_from, _to)
+      rename_called = true
+      return 0
+    end,
+  }, function()
+    local result = templates.init_metadata()
+    assert_true(result[1] == destination, "Expected existing path returned")
+    assert_true(result.backup_dir == nil, "Expected no backup dir without force")
+    assert_true(result.backed_up == nil, "Expected no backup without force")
   end)
 
   assert_true(rename_called == false, "Expected rename not called without force")

@@ -9,7 +9,9 @@
 - Course-aware insert now requires a saved buffer and copies companions beside the project without overwriting existing copies.
 - Added shared fence API `\begin{mdcode}{Lang}` plus `python` / `rcode` / `sql` wrappers; updated `\\tp` / `\\tr` / `\\ts` accordingly.
 - Added `:LatexToolsUseMinted[!]` to switch the parent `\\input` between listings and minted companions.
+- Documented macOS Homebrew minted setup: Python 3.13 `latexminted` wrapper (MacTeX 2025 `minted` 3.7 / `latexminted` 0.6), VimTeX `-shell-escape` / `PATH`, and how to inspect tools from Neovim (`:terminal`, `:messages`).
 - `:LatexToolsInitTemplates!` now backs up conflicting user library files to `templates-backup/<timestamp>/` before writing fresh plugin defaults; user-only templates are left untouched.
+- `:LatexToolsInitMetadata!` now backs up existing `courses.yaml` to `metadata-backup/<timestamp>/` before writing the bundled starter (no in-place overwrite).
 - Added `latex-tools/templates/` as the user document template directory, with legacy support for `latex-tools/assignment.tex`.
 - Added template metadata via `% latex-tools: course-aware` so new rendered templates do not require code changes.
 - Added due-date validation (`YYYY-MM-DD`) before assignment rendering.

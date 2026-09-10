@@ -2,10 +2,13 @@
 % Project-local Markdown-like code fences (opt-in backend: tcolorbox + minted + Pygments).
 % Copied beside each course-aware document; edit freely for that project.
 %
-% Requirements:
-%   - pygmentize on PATH (pip install Pygments)
-%   - compile with -shell-escape, e.g. latexmk:
-%       $pdflatex = 'xelatex -shell-escape %O %S';
+% Requirements (macOS Homebrew; see README "Minted setup"):
+%   - working latexminted on PATH (TeX Live 2024+ or: brew install pipx && pipx install latexminted)
+%   - brew install pygments  (optional; provides pygmentize)
+%   - if highlighting fails: enable -shell-escape in latexmkrc, e.g.
+%       $xelatex = 'xelatex -shell-escape %O %S';
+%   - ensure ~/.local/bin precedes /Library/TeX/texbin when Homebrew Python 3.14+
+%     breaks TeX Live's latexminted (ArgParser "color" crash → minted "unavailable")
 %
 % Enable in the parent document (and comment out the listings companion):
 %   % \input{latex-tools-code}
