@@ -594,7 +594,12 @@ run_test("create subfile writes customized file and opens split", function()
   vim.api.nvim_buf_set_lines(0, 0, -1, false, {
     "% latex-tools: course-aware",
     "\\documentclass{article}",
+    "\\begin{document}",
+    "",
+    "\\end{document}",
   })
+  -- Insert should use the pre-prompt cursor line (middle of buffer), not line 1.
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
   local mkdir_path = nil
   local wrote_path = nil
@@ -627,6 +632,8 @@ run_test("create subfile writes customized file and opens split", function()
       return {}
     end,
     [{ vim.fn, "input" }] = function(prompt, _default)
+      -- Simulate cmdline input leaving the window cursor stale at line 1.
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
       if prompt:find("Subfile name", 1, true) then
         return "chapter-one"
       end
@@ -649,11 +656,13 @@ run_test("create subfile writes customized file and opens split", function()
     require("latex-tools.subfiles").create_subfile()
   end)
 
+  local lines = get_buffer_lines()
   assert_true(mkdir_path == "/tmp/project/subfile", "Expected subfile directory")
   assert_true(wrote_path == "/tmp/project/subfile/chapter-one.tex", "Expected subfile path")
   assert_contains(wrote_lines, "% !TEX root = ../assignment-3.tex")
   assert_contains(wrote_lines, "\\documentclass[../assignment-3]{subfiles}")
-  assert_contains(get_buffer_lines(), "\\subfile{./subfile/chapter-one.tex}")
+  assert_true(lines[4] == "\\subfile{./subfile/chapter-one.tex}", "Expected include at pre-prompt cursor line")
+  assert_true(lines[1] ~= "\\subfile{./subfile/chapter-one.tex}", "Include must not use post-input cursor")
   assert_true(split_cmd:find("rightbelow vsplit", 1, true) ~= nil, "Expected right split")
 end)
 

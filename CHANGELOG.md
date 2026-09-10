@@ -4,6 +4,7 @@
 
 - Added a unified document template picker through `:LatexToolsTemplate` and `\\ta`.
 - Changed subfile workflow: use `:LatexToolsSubfile` / `\\tS` from a saved course-aware parent document instead of inserting `subfile.tex` into a blank buffer.
+- Fixed subfile include insertion to use the pre-prompt cursor line so `\\subfile{...}` lands where the user invoked the command.
 - Added `latex-tools/templates/` as the user document template directory, with legacy support for `latex-tools/assignment.tex`.
 - Added template metadata via `% latex-tools: course-aware` so new rendered templates do not require code changes.
 - Added due-date validation (`YYYY-MM-DD`) before assignment rendering.

@@ -32,15 +32,17 @@ function M.build_subfile_include_path(subfile_name)
   return "./" .. SUBFILE_DIR .. "/" .. subfile_name
 end
 
-function M.insert_subfile_include(buf, win, subfile_name)
-  local cursor = vim.api.nvim_win_get_cursor(win)
+function M.insert_subfile_include(buf, cursor, subfile_name)
+  local row = cursor[1] - 1
   local include_line = "\\subfile{" .. M.build_subfile_include_path(subfile_name) .. "}"
-  vim.api.nvim_buf_set_lines(buf, cursor[1] - 1, cursor[1] - 1, false, { include_line })
+  vim.api.nvim_buf_set_lines(buf, row, row, false, { include_line })
 end
 
 function M.create_subfile()
   local buf = vim.api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win()
+  -- Capture before vim.fn.input(); cmdline input leaves the window cursor stale.
+  local cursor = vim.api.nvim_win_get_cursor(win)
 
   if not util.is_course_aware_buffer(buf) then
     vim.notify(
@@ -93,7 +95,7 @@ function M.create_subfile()
     return
   end
 
-  M.insert_subfile_include(buf, win, subfile_name)
+  M.insert_subfile_include(buf, cursor, subfile_name)
   vim.cmd("rightbelow vsplit " .. vim.fn.fnameescape(destination))
   vim.notify("Created subfile: " .. destination, vim.log.levels.INFO)
 end
