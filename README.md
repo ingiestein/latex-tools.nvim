@@ -52,8 +52,10 @@ Restart Neovim, then run `:Lazy sync` to install the plugin.
 Run:
 
 ```vim
-:LatexToolsInit
+:LatexToolsInstall
 ```
+
+(Alias: `:LatexToolsInit` — creates missing files only, never replaces.)
 
 This creates:
 
@@ -62,32 +64,39 @@ This creates:
 | `~/.config/nvim/latex-tools/courses.yaml` | Your profile and course catalog |
 | `~/.config/nvim/latex-tools/templates/` | Document templates (`assignment.tex`, `subfile.tex`, …) |
 | `~/.config/nvim/latex-tools/snippets/` | Reusable partial `.tex` blocks |
-| `~/.config/nvim/latex-tools/templates-backup/` | Timestamped backups from `:LatexToolsInitTemplates!` |
-| `~/.config/nvim/latex-tools/metadata-backup/` | Timestamped backups from `:LatexToolsInitMetadata!` |
+| `~/.config/nvim/latex-tools/templates-backup/` | Timestamped backups from `:LatexToolsRefreshTemplates` |
+| `~/.config/nvim/latex-tools/metadata-backup/` | Timestamped backups from `:LatexToolsRefreshMetadata` |
 
-You can also initialize each part separately:
+Prefer **Install** vs **Refresh** (clearer than Init / Init!):
 
 ```vim
-:LatexToolsInitMetadata     " create courses.yaml only if missing
-:LatexToolsInitTemplates     " create missing document templates only
-:LatexToolsInitSnippets      " snippets directory only
-:LatexToolsInitTemplates!    " back up existing library files, then refresh from plugin
-:LatexToolsInitMetadata!     " back up existing courses.yaml, then refresh from plugin
-:LatexToolsInit!             " backup-refresh templates and courses.yaml; never removes snippets
+:LatexToolsInstall              " create missing courses.yaml, templates, snippets
+:LatexToolsInstallMetadata      " create courses.yaml only if missing
+:LatexToolsInstallTemplates     " create missing document templates only
+:LatexToolsInstallSnippets      " snippets directory only
+:LatexToolsRefreshTemplates     " confirm → back up conflicts → write fresh defaults
+:LatexToolsRefreshMetadata      " confirm → back up courses.yaml → write plugin starter
+:LatexToolsRefresh              " confirm → refresh metadata + templates
 ```
 
-Aliases: `:LatexToolsInitCourses` → `:LatexToolsInitMetadata`, `:LatexToolsInitAssignment` → `:LatexToolsInitTemplates`.
+Or open the action menu (labels explain each step):
+
+```vim
+:LatexTools
+```
+
+Legacy aliases still work: `:LatexToolsInit` → Install; `:LatexToolsInit!` → Refresh (with confirm); `:LatexToolsInitCourses` → InstallMetadata; `:LatexToolsInitAssignment` → InstallTemplates.
 
 **Backup locations** (siblings of the live files, never nested inside them so pickers stay clean):
 
-| Bang command | Moves conflicts into |
+| Command | Moves conflicts into |
 | --- | --- |
-| `:LatexToolsInitTemplates!` | `latex-tools/templates-backup/<YYYYMMDD-HHMMSS>/` |
-| `:LatexToolsInitMetadata!` | `latex-tools/metadata-backup/<YYYYMMDD-HHMMSS>/courses.yaml` |
+| `:LatexToolsRefreshTemplates` | `latex-tools/templates-backup/<YYYYMMDD-HHMMSS>/` |
+| `:LatexToolsRefreshMetadata` | `latex-tools/metadata-backup/<YYYYMMDD-HHMMSS>/courses.yaml` |
 
-`:LatexToolsInitTemplates!` only moves **bundled** basenames that already exist in `templates/`. User-only `.tex` files that are not in the plugin bundle stay in `templates/` untouched. `:LatexToolsInitMetadata!` moves the existing `courses.yaml` aside, then writes the bundled starter. Compare the backup folder to the new defaults and copy back any personal edits you still want.
+`:LatexToolsRefreshTemplates` only moves **bundled** basenames that already exist in `templates/`. User-only `.tex` files that are not in the plugin bundle stay in `templates/` untouched. `:LatexToolsRefreshMetadata` moves the existing `courses.yaml` aside, then writes the bundled starter. Refresh always asks for confirmation first.
 
-**Do not confuse** library refresh with project companions: re-running init bangs does **not** overwrite `latex-tools-code*.tex` already copied beside a paper.
+**Do not confuse** library refresh with project companions: re-running Refresh does **not** overwrite `latex-tools-code*.tex` already copied beside a paper.
 
 ### 3. Add your courses
 
@@ -205,12 +214,12 @@ Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `
 **Opt in to minted**:
 
 ```vim
-:LatexToolsUseMinted
+:LatexToolsCodeMinted
 ```
 
-Restore listings with `:LatexToolsUseMinted!`. Or edit the parent `\input{...}` line by hand.
+Restore listings with `:LatexToolsCodeListings` (alias: `:LatexToolsUseMinted!`). Or edit the parent `\input{...}` line by hand.
 
-Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsInitTemplates!` to refresh the **user library** (with backup); that does not change companions already copied into an existing project.
+Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsRefreshTemplates` to refresh the **user library** (with confirm + backup); that does not change companions already copied into an existing project.
 
 #### Minted setup (macOS / Homebrew)
 
@@ -319,7 +328,7 @@ Or capture into the message log:
 
 **5. Prefer listings when you do not need Pygments**
 
-The default companion (`latex-tools-code.tex`) needs no Python and no shell escape. Use `:LatexToolsUseMinted!` to switch back.
+The default companion (`latex-tools-code.tex`) needs no Python and no shell escape. Use `:LatexToolsCodeListings` to switch back.
 
 ## Everyday Tools
 
@@ -327,17 +336,31 @@ The default companion (`latex-tools-code.tex`) needs no Python and no shell esca
 | --- | --- |
 | `\ta` | Document template picker |
 | `\tS` | Create subfile chapter from saved course-aware document |
-| `\tx` | Custom `.tex` snippet picker |
-| `\tf` | Figure with image picker and caption |
+| `\tx` | Custom `.tex` snippet picker (includes seeded academic starters) |
+| `\tf` | Figure with image picker, caption, and width |
 | `\tF` | Placeholder figure |
 | `\tb` | Interactive table builder |
 | `\tB` | Placeholder table |
 | `\tn` | Footnote prompt |
-| `\tR` | Reference to a buffer label |
-| `\tk` | BibTeX citation key |
+| `\tR` | Reference to a project label |
+| `\tk` | BibTeX / biblatex citation (from project `.bib`) |
+| `\tc` | Cited-keys report vs discovered `.bib` (read-only) |
+| `\te` | Equation / align insert |
+| `\th` | Theorem / definition / lemma / proof insert |
 | `\tv` | Table from CSV |
 | `\tp` / `\tr` / `\ts` | Python / R / SQL Markdown-like code fences |
 | `\tT` | Run tests |
+
+### Bibliography (JabRef / external manager)
+
+The plugin never writes bibliography entries. Manage your library in JabRef (or similar), export a `.bib` into the project (default name `references.bib` beside the parent `.tex`), then:
+
+1. Cite with `:LatexToolsBib` / `\tk` (multi-key supported; recursive `.bib` discovery up to depth 4)
+2. Compile with biber (template sets `% !BIB program = biber`)
+3. `\printbibliography` is already in the course-aware assignment template
+4. `:LatexToolsCitedKeys` / `\tc` lists keys cited in the project and flags any missing from discovered `.bib` files
+
+`:LatexToolsInstallSnippets` creates `~/.config/nvim/latex-tools/snippets/` and copies **missing** bundled starters from the plugin’s `snippets/academic/` (align, gather, longtable, two-panel figure, algorithm, quote). Existing user files are never overwritten.
 
 ## Configuration
 
@@ -377,16 +400,25 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 
 ## Commands
 
-### Initialization
+### Discovery
 
 | Command | Description |
 | --- | --- |
-| `:LatexToolsInit[!]` | Initialize metadata, templates, and snippets |
-| `:LatexToolsInitMetadata[!]` | Create `courses.yaml` if missing; bang backs up then refreshes from plugin |
-| `:LatexToolsInitTemplates[!]` | Create missing templates; bang backs up then refreshes from plugin |
-| `:LatexToolsInitSnippets` | Create the snippets directory |
-| `:LatexToolsInitCourses[!]` | Alias for `:LatexToolsInitMetadata[!]` |
-| `:LatexToolsInitAssignment[!]` | Alias for `:LatexToolsInitTemplates[!]` |
+| `:LatexTools` | Action menu (`vim.ui.select`) with labeled Install / Refresh / Insert / Code fence actions |
+
+### Setup (Install = create missing; Refresh = confirm then backup-replace)
+
+| Command | Description |
+| --- | --- |
+| `:LatexToolsInstall` | Create missing `courses.yaml`, templates, and snippets dir (never replaces) |
+| `:LatexToolsInstallMetadata` | Create `courses.yaml` if missing |
+| `:LatexToolsInstallTemplates` | Create missing bundled templates |
+| `:LatexToolsInstallSnippets` | Create snippets dir and seed missing bundled academic starters |
+| `:LatexToolsRefresh` | Confirm, then backup-refresh metadata and templates |
+| `:LatexToolsRefreshMetadata` | Confirm, then move `courses.yaml` to `metadata-backup/` and write starter |
+| `:LatexToolsRefreshTemplates` | Confirm, then move conflicts to `templates-backup/` and write defaults |
+
+Legacy aliases: `:LatexToolsInit[!]`, `:LatexToolsInitMetadata[!]`, `:LatexToolsInitTemplates[!]`, `:LatexToolsInitSnippets`, `:LatexToolsInitCourses[!]`, `:LatexToolsInitAssignment[!]` (bang maps to Refresh* with confirm).
 
 ### Templates and snippets
 
@@ -395,7 +427,9 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 | `:LatexToolsTemplate` | Choose and insert a document template |
 | `:LatexToolsAssignment` | Insert a rendered assignment (skips template picker) |
 | `:LatexToolsSubfile` | Create a subfile chapter from the current course-aware document |
-| `:LatexToolsUseMinted[!]` | Switch parent to minted fences (`!` restores listings) |
+| `:LatexToolsCodeMinted` | Switch parent to minted fences |
+| `:LatexToolsCodeListings` | Switch parent to portable listings fences |
+| `:LatexToolsUseMinted[!]` | Alias: CodeMinted (bang: CodeListings) |
 | `:LatexToolsSnippet` | Choose and insert a custom `.tex` snippet |
 
 ### Writing helpers
@@ -408,7 +442,10 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 | `:LatexToolsTablePlaceholder` | Insert placeholder table |
 | `:LatexToolsFootnote` | Prompt for and insert a footnote |
 | `:LatexToolsReference` | Insert a reference to a label |
-| `:LatexToolsBib` | Insert a BibTeX citation |
+| `:LatexToolsBib` | Insert a BibTeX/biblatex citation |
+| `:LatexToolsCitedKeys` | Report cited keys vs discovered `.bib` (read-only) |
+| `:LatexToolsEquation` | Insert equation or align |
+| `:LatexToolsTheorem` | Insert theorem / definition / lemma / proof |
 | `:LatexToolsCSVTable` | Convert a CSV file to a LaTeX table |
 
 ### Testing
@@ -426,14 +463,14 @@ Overrides such as `paths.python_script_path` and `python_cmd` cause the plugin t
 
 ### Initialization
 
-- `require("latex-tools").init_metadata(opts)` — `courses.yaml`
-- `require("latex-tools").init_templates(opts)` — document templates
-- `require("latex-tools").init_snippets()` — snippets directory
-- `require("latex-tools").init_all(opts)` — any combination; `opts` may include `metadata`, `templates`, `snippets`, `force`
+- `require("latex-tools").install()` / `install_metadata()` / `install_templates()` / `install_snippets()` — create missing only
+- `require("latex-tools").refresh()` / `refresh_metadata()` / `refresh_templates()` — backup-then-replace (**no** UI confirm; commands add confirm)
+- `require("latex-tools").open_menu()` — same as `:LatexTools`
+- `require("latex-tools").init_metadata(opts)` / `init_templates(opts)` / `init_snippets()` / `init_all(opts)` — lower-level API (`force` selects refresh)
 
 ```lua
--- Re-init templates only, overwriting existing files
-require("latex-tools").init_all({ templates = true, metadata = false, snippets = false, force = true })
+-- Refresh templates from Lua (no confirm dialog)
+require("latex-tools").refresh_templates()
 ```
 
 Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `init_assignment_template`, `init_custom_snippets_dir`, `init_user_files`.
@@ -452,6 +489,9 @@ Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `ini
 - `require("latex-tools").insert_footnote_snippet()`
 - `require("latex-tools").insert_reference_snippet()`
 - `require("latex-tools").insert_bib_key_snippet()`
+- `require("latex-tools").report_cited_keys()`
+- `require("latex-tools").insert_equation_snippet()`
+- `require("latex-tools").insert_theorem_snippet()`
 - `require("latex-tools").insert_table_from_csv()`
 - `require("latex-tools").insert_snippet(key)` — `p`, `r`, or `s`
 

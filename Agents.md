@@ -7,23 +7,25 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 ## Project Layout
 
 - `lua/latex-tools/` — All Lua source (entrypoint: `init.lua`)
-  - `init.lua` — Public API + `setup()`; exposes `init_metadata`, `init_templates`, `init_snippets`, `init_all`
+  - `init.lua` — Public API + `setup()`; exposes `install_*` / `refresh_*` / `open_menu`, plus `init_*` and aliases
   - `config.lua` — User options (keymaps, commands, path overrides); warns on `python_script_path` override
   - `state.lua` — Path resolution, user-file bootstrapping, `run_command()` with sanitized errors
   - `templates.lua` — Document template discovery, `% latex-tools:` metadata parsing, unified picker
   - `subfiles.lua` — Subfile chapter creation from saved course-aware parent buffers
   - `assignment.lua` — Course picker + Python-driven rendering for course-aware templates
   - `figures.lua` / `tables.lua` — Interactive snippet builders (UI select + input)
-  - `references.lua` — Label/`\ref` picker + BibTeX key picker (parses `.bib` and buffer labels)
+  - `references.lua` — Label/`\ref` picker, BibTeX/biblatex cite picker, cited-keys report
+  - `math.lua` — Equation/align and theorem-style environment inserts
   - `code_fences.lua` — Toggle listings vs minted companion `\input` (`:LatexToolsUseMinted[!]`)
   - `snippets.lua` — Pre-canned Python/R/SQL fence wrappers (`python` / `rcode` / `sql`)
   - `tex_snippets.lua` — Recursive picker for user-managed `.tex` snippet files
   - `util.lua` — Shared helpers (insertion, escaping, CSV parsing, slugify, file listing, date validation, message sanitization, template metadata)
-  - `commands.lua` — `:LatexTools*` user commands
+  - `commands.lua` — `:LatexTools*` user commands + confirm gate for Refresh + `:LatexTools` menu
   - `keymaps.lua` — `\<prefix>` mappings (default `\t`) + which-key integration
   - `tests.lua` — `:LatexToolsTest` wrapper
 - `python/render_template.py` — YAML parser and LaTeX command replacement for course-aware templates
 - `templates/` — Bundled defaults (`courses.yaml`, `assignment.tex`, `subfile.tex`, `latex-tools-code.tex`, `latex-tools-code-minted.tex`)
+- `snippets/academic/` — Bundled starter `.tex` fragments seeded into the user snippets dir on InstallSnippets
 - `.github/workflows/` — CI on pushes/pull requests and tagged GitHub releases
 - `tests/templates_spec.lua` — Comprehensive headless regression suite (uses `nvim --headless -l`)
 
@@ -36,16 +38,22 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - custom snippets from `stdpath("config")/latex-tools/snippets/`
   - assignment rendering via `tex_template_path`, preferring `templates/assignment.tex`, then legacy `latex-tools/assignment.tex`, then bundled
   - Respect configured path overrides in `config.lua`.
-- **Project-local companions**: Course-aware insert requires a saved buffer. `state.ensure_project_companions(parent_path)` copies `latex-tools-code.tex` and `latex-tools-code-minted.tex` beside the parent from the user template library (fallback: bundled). Never write absolute plugin/`stdpath` `\input` paths into documents. Do not overwrite existing project companions. Default `\input{latex-tools-code}`; opt-in minted via `\input{latex-tools-code-minted}` or `:LatexToolsUseMinted` / `:LatexToolsUseMinted!`. Minted needs a working `latexminted` on PATH (see README macOS Homebrew section); listings companion needs no Python/shell-escape.
+- **Project-local companions**: Course-aware insert requires a saved buffer. `state.ensure_project_companions(parent_path)` copies `latex-tools-code.tex` and `latex-tools-code-minted.tex` beside the parent from the user template library (fallback: bundled). Never write absolute plugin/`stdpath` `\input` paths into documents. Do not overwrite existing project companions. Default `\input{latex-tools-code}`; opt-in minted via `\input{latex-tools-code-minted}` or `:LatexToolsCodeMinted` / `:LatexToolsCodeListings` (aliases `:LatexToolsUseMinted[!]`). Minted needs a working `latexminted` on PATH (see README macOS Homebrew section); listings companion needs no Python/shell-escape.
 - **User file initialization**:
-  - `init_metadata(opts)` / `:LatexToolsInitMetadata[!]` — create `courses.yaml` if missing; bang **moves** the existing file to `latex-tools/metadata-backup/<timestamp>/courses.yaml` then writes the bundled starter
-  - `init_templates(opts)` / `:LatexToolsInitTemplates[!]` — missing files only; bang **moves** conflicting user library files to `latex-tools/templates-backup/<timestamp>/` then writes fresh bundled copies. User-only extras in `templates/` are never removed
-  - `init_snippets()` / `:LatexToolsInitSnippets` — snippets directory only
-  - `init_all(opts)` / `:LatexToolsInit[!]` — all of the above; `opts` may set `metadata`, `templates`, `snippets`, and `force` individually
-  - `:LatexToolsInit!` backup-refreshes **both** templates and `courses.yaml`; never removes snippets
+  - Prefer **Install** (create missing) vs **Refresh** (confirm → backup-then-replace). Discovery menu: `:LatexTools`
+  - `install_metadata()` / `:LatexToolsInstallMetadata` — create `courses.yaml` if missing
+  - `refresh_metadata()` / `:LatexToolsRefreshMetadata` — confirm, move existing file to `latex-tools/metadata-backup/<timestamp>/courses.yaml`, write bundled starter
+  - `install_templates()` / `:LatexToolsInstallTemplates` — missing bundled templates only
+  - `refresh_templates()` / `:LatexToolsRefreshTemplates` — confirm, move conflicts to `latex-tools/templates-backup/<timestamp>/`, write fresh bundled copies; user-only extras never removed
+  - `install_snippets()` / `:LatexToolsInstallSnippets` — snippets directory + copy missing bundled `snippets/**/*.tex` starters (never overwrite user files)
+  - Bibliography: plugin only **reads** `.bib` (JabRef owns edits); template uses `\addbibresource{references.bib}` + `\printbibliography`; `:LatexToolsCitedKeys` is read-only
+  - Math inserts: `:LatexToolsEquation` / `:LatexToolsTheorem`; amsmath enabled in assignment template; amsthm theorems commented
+  - `install()` / `:LatexToolsInstall` — all Install steps; `refresh()` / `:LatexToolsRefresh` — metadata + templates only (snippets never deleted)
+  - Legacy `:LatexToolsInit[!]` and friends remain as aliases (bang → Refresh* with confirm)
+  - Lower-level `init_metadata` / `init_templates` / `init_all` still accept `{ force = true }` without UI confirm (for Lua/tests)
   - Backup dirs are siblings of `templates/` / `courses.yaml` (not nested inside `templates/`), so the document picker never lists backups
-  - Init bangs refresh the **user library** only; they do not overwrite project-local companions beside an existing paper
-  - Older names (`init_course_metadata`, `init_user_templates`, `init_user_files`, etc.) remain as aliases
+  - Refresh affects the **user library** only; it does not overwrite project-local companions beside an existing paper
+  - Older Lua names (`init_course_metadata`, `init_user_templates`, `init_user_files`, etc.) remain as aliases
 - **Document templates vs snippets**:
   - Templates: full documents in `templates/*.tex`; inserted via `:LatexToolsTemplate` / `\ta`
   - Subfiles: created via `:LatexToolsSubfile` / `\tS` from a saved buffer containing `% latex-tools: course-aware`; writes `subfile/<name>.tex` beside the parent and opens it in a right split
@@ -55,7 +63,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline, `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.
 - **Validation**: Assignment due dates must pass `util.valid_date()` (`YYYY-MM-DD`, including leap years) before rendering.
-- **UI**: `vim.ui.select()` for pickers, `vim.fn.input()` for prompts. Stub them in tests.
+- **UI**: `vim.ui.select()` for pickers/menus, `vim.fn.input()` for prompts, `vim.fn.confirm()` before Refresh. Stub them in tests.
 - **Python**: Called via `state.get_python_cmd()` + `state.run_command()`. Supports PyYAML if available; falls back to the custom parser in `render_template.py`. Command errors are sanitized with `util.sanitize_message()` before notification.
 - **Testing**: Run with `:LatexToolsTest`, `\\tT`, or `nvim --headless -u NONE -l tests/templates_spec.lua`. Tests heavily stub `vim.fn.input`, `vim.ui.select`, `vim.fn.stdpath`, etc.
 - **Style**: Keep modules small and single-purpose. No global state beyond config. Use `vim.notify()` for feedback. Follow existing comment style (short, factual).
@@ -99,7 +107,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 
 **Change initialization behavior**
 - Bootstrapping logic lives in `state.lua` (`initialize_course_metadata`, `initialize_user_templates`, `initialize_custom_snippets_dir`).
-- Public orchestration lives in `init.lua` (`init_metadata`, `init_templates`, `init_snippets`, `init_all`).
+- Public orchestration lives in `init.lua` (`install_*`, `refresh_*`, `open_menu`, and `init_*`).
 - Template init copies all bundled `*.tex` files and emits one summary notification.
 
 ## Development Commands

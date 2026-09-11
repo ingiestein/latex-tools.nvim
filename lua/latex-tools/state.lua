@@ -88,6 +88,7 @@ local function default_paths()
   local legacy_template_path = user_template_path()
   return {
     template_dir = template_dir,
+    bundled_snippets_dir = root .. "/snippets",
     user_templates_dir = user_templates_dir(),
     yaml_path = is_readable(preferred_yaml_path) and preferred_yaml_path or bundled_yaml_path,
     tex_template_path = resolve_assignment_template_path(
@@ -246,7 +247,7 @@ function M.initialize_user_templates(opts)
     vim.notify(
       "Templates already exist in "
         .. destination_dir
-        .. ". Use :LatexToolsInitTemplates! to back up existing files and refresh from the plugin.",
+        .. ". Use :LatexToolsRefreshTemplates (or :LatexToolsInitTemplates!) to back up existing files and refresh from the plugin.",
       vim.log.levels.WARN
     )
   elseif failed > 0 then
@@ -286,7 +287,7 @@ function M.initialize_course_metadata(opts)
     vim.notify(
       "Course metadata already exists at "
         .. destination
-        .. ". Use :LatexToolsInitMetadata! to back up the existing file and refresh from the plugin.",
+        .. ". Use :LatexToolsRefreshMetadata (or :LatexToolsInitMetadata!) to back up the existing file and refresh from the plugin.",
       vim.log.levels.WARN
     )
     local result = { destination }
@@ -328,7 +329,42 @@ function M.initialize_custom_snippets_dir()
     return nil
   end
 
-  vim.notify("Custom snippet directory ready at " .. directory, vim.log.levels.INFO)
+  local bundled_root = default_paths().bundled_snippets_dir
+  local seeded = 0
+  local skipped = 0
+  if vim.fn.isdirectory(bundled_root) == 1 then
+    local sources = util.list_tex_files(bundled_root, true)
+    for _, source in ipairs(sources) do
+      local relative = util.relative_path(source, bundled_root)
+      local destination = directory .. "/" .. relative
+      if is_readable(destination) then
+        skipped = skipped + 1
+      else
+        local read_ok, lines = pcall(vim.fn.readfile, source)
+        if read_ok then
+          vim.fn.mkdir(vim.fn.fnamemodify(destination, ":h"), "p")
+          local write_ok, write_result = pcall(vim.fn.writefile, lines, destination)
+          if write_ok and write_result == 0 then
+            seeded = seeded + 1
+          end
+        end
+      end
+    end
+  end
+
+  if seeded > 0 then
+    vim.notify(
+      string.format(
+        "Custom snippet directory ready at %s (seeded %d starter file(s)%s)",
+        directory,
+        seeded,
+        skipped > 0 and string.format(", skipped %d existing", skipped) or ""
+      ),
+      vim.log.levels.INFO
+    )
+  else
+    vim.notify("Custom snippet directory ready at " .. directory, vim.log.levels.INFO)
+  end
   return directory
 end
 

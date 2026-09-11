@@ -74,6 +74,18 @@ function M.insert_bib_key_snippet()
   return references.insert_bib_key_snippet()
 end
 
+function M.report_cited_keys()
+  return references.report_cited_keys()
+end
+
+function M.insert_equation_snippet()
+  return require("latex-tools.math").insert_equation_snippet()
+end
+
+function M.insert_theorem_snippet()
+  return require("latex-tools.math").insert_theorem_snippet()
+end
+
 function M.insert_table_from_csv()
   return tables.insert_table_from_csv()
 end
@@ -127,6 +139,39 @@ function M.init_all(opts)
     result.metadata = M.init_metadata({ force = options.force })
   end
   return result
+end
+
+-- Clearer Lua aliases (Install = create missing; Refresh = backup-then-replace, no UI confirm)
+function M.install_metadata()
+  return M.init_metadata({ force = false })
+end
+
+function M.install_templates()
+  return M.init_templates({ force = false })
+end
+
+function M.install_snippets()
+  return M.init_snippets()
+end
+
+function M.install(opts)
+  return M.init_all(vim.tbl_extend("force", opts or {}, { force = false }))
+end
+
+function M.refresh_metadata()
+  return M.init_metadata({ force = true })
+end
+
+function M.refresh_templates()
+  return M.init_templates({ force = true })
+end
+
+function M.refresh()
+  return M.init_all({ metadata = true, templates = true, snippets = false, force = true })
+end
+
+function M.open_menu()
+  return require("latex-tools.commands").open_menu()
 end
 
 -- Backward-compatible aliases

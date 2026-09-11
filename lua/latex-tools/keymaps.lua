@@ -48,7 +48,19 @@ function M.setup(opts)
 
   map(prefix .. "k", function()
     require("latex-tools").insert_bib_key_snippet()
-  end, "Insert BibTeX Citation Key")
+  end, "Insert BibTeX Citation")
+
+  map(prefix .. "c", function()
+    require("latex-tools").report_cited_keys()
+  end, "Report Cited Keys vs .bib")
+
+  map(prefix .. "e", function()
+    require("latex-tools").insert_equation_snippet()
+  end, "Insert Equation / Align")
+
+  map(prefix .. "h", function()
+    require("latex-tools").insert_theorem_snippet()
+  end, "Insert Theorem / Definition / Proof")
 
   map(prefix .. "v", function()
     require("latex-tools").insert_table_from_csv()
@@ -86,7 +98,10 @@ function M.setup(opts)
       { prefix .. "B", desc = "Table (Placeholder)" },
       { prefix .. "n", desc = "Footnote (Input)" },
       { prefix .. "R", desc = "Reference to Label" },
-      { prefix .. "k", desc = "BibTeX Citation Key" },
+      { prefix .. "k", desc = "BibTeX Citation" },
+      { prefix .. "c", desc = "Cited Keys Report" },
+      { prefix .. "e", desc = "Equation / Align" },
+      { prefix .. "h", desc = "Theorem / Definition / Proof" },
       { prefix .. "v", desc = "Table from CSV" },
       { prefix .. "S", desc = "Create Subfile Chapter" },
       { prefix .. "p", desc = "Python Code" },

@@ -159,7 +159,10 @@ run_test("interactive figure picker selects image and caption", function()
     [{ vim.ui, "select" }] = function(items, _opts, on_choice)
       on_choice(items[1])
     end,
-    [{ vim.fn, "input" }] = function(_prompt, _default)
+    [{ vim.fn, "input" }] = function(prompt, default)
+      if prompt:find("width", 1, true) then
+        return default
+      end
       return "Chosen caption"
     end,
   }, function()
@@ -230,7 +233,7 @@ run_test("BibTeX key helper inserts selected citation", function()
   vim.cmd("cd " .. vim.fn.fnameescape(original_cwd))
 
   local line = vim.api.nvim_get_current_line()
-  assert_true(line == "Prior work\\cite{smith2024}", "BibTeX key helper did not insert citation")
+  assert_true(line == "Prior work\\citep{smith2024}", "BibTeX helper did not insert citation")
 end)
 
 run_test("custom snippet picker inserts selected file", function()
@@ -361,7 +364,7 @@ end)
 
 run_test("custom snippet directory bootstrap creates configured directory", function()
   local destination = "/tmp/nvim-config/latex-tools/snippets"
-  local mkdir_path = nil
+  local mkdir_paths = {}
 
   templates.setup({
     keymaps = { enable = false },
@@ -371,9 +374,12 @@ run_test("custom snippet directory bootstrap creates configured directory", func
 
   with_stubs({
     [{ vim.fn, "mkdir" }] = function(path, flag)
-      mkdir_path = path
+      table.insert(mkdir_paths, path)
       assert_true(flag == "p", "Expected mkdir -p semantics")
       return 1
+    end,
+    [{ vim.fn, "isdirectory" }] = function(_path)
+      return 0
     end,
   }, function()
     local result = templates.init_custom_snippets_dir()
@@ -381,7 +387,7 @@ run_test("custom snippet directory bootstrap creates configured directory", func
   end)
 
   templates.setup({ keymaps = { enable = false }, commands = { enable = false } })
-  assert_true(mkdir_path == destination, "Expected snippet directory to be created")
+  assert_true(mkdir_paths[1] == destination, "Expected snippet directory to be created")
 end)
 
 run_test("combined user file bootstrap runs every initializer", function()
@@ -1090,6 +1096,289 @@ run_test("built-in code snippets use short fence environments", function()
   local lines = get_buffer_lines()
   assert_contains(lines, "\\begin{python}")
   assert_contains(lines, "\\end{python}")
+end)
+
+run_test("refresh_metadata aborts when confirm is declined", function()
+  local commands = require("latex-tools.commands")
+  local rename_called = false
+  local refresh_called = false
+
+  with_stubs({
+    [{ vim.fn, "confirm" }] = function(_msg, _choices, default, _type)
+      assert_true(default == 2, "Expected No as default confirm choice")
+      return 2
+    end,
+    [{ templates, "refresh_metadata" }] = function()
+      refresh_called = true
+      return { "/tmp/courses.yaml" }
+    end,
+    [{ vim.fn, "rename" }] = function(_from, _to)
+      rename_called = true
+      return 0
+    end,
+  }, function()
+    local result = commands.refresh_metadata()
+    assert_true(result == nil, "Expected nil when refresh is cancelled")
+  end)
+
+  assert_true(refresh_called == false, "Expected Lua refresh not called after cancel")
+  assert_true(rename_called == false, "Expected rename not called after cancel")
+end)
+
+run_test("refresh_metadata proceeds when confirm is accepted", function()
+  local commands = require("latex-tools.commands")
+  local refresh_called = false
+
+  with_stubs({
+    [{ vim.fn, "confirm" }] = function(_msg, _choices, _default, _type)
+      return 1
+    end,
+    [{ templates, "refresh_metadata" }] = function()
+      refresh_called = true
+      return { "/tmp/courses.yaml" }
+    end,
+  }, function()
+    local result = commands.refresh_metadata()
+    assert_true(result[1] == "/tmp/courses.yaml", "Expected refresh result when confirmed")
+  end)
+
+  assert_true(refresh_called == true, "Expected Lua refresh after confirm")
+end)
+
+run_test("install and refresh Lua aliases map force correctly", function()
+  with_stubs({
+    [{ state, "initialize_course_metadata" }] = function(opts)
+      assert_true(opts.force == false, "Expected install_metadata force false")
+      return { "/tmp/courses.yaml" }
+    end,
+    [{ state, "initialize_user_templates" }] = function(opts)
+      assert_true(opts.force == false, "Expected install_templates force false")
+      return { "/tmp/templates/assignment.tex" }
+    end,
+  }, function()
+    templates.install_metadata()
+    templates.install_templates()
+  end)
+
+  with_stubs({
+    [{ state, "initialize_course_metadata" }] = function(opts)
+      assert_true(opts.force == true, "Expected refresh_metadata force true")
+      return { "/tmp/courses.yaml" }
+    end,
+    [{ state, "initialize_user_templates" }] = function(opts)
+      assert_true(opts.force == true, "Expected refresh_templates force true")
+      return { "/tmp/templates/assignment.tex" }
+    end,
+    [{ state, "initialize_custom_snippets_dir" }] = function()
+      error("snippets should not run during refresh()")
+    end,
+  }, function()
+    templates.refresh_metadata()
+    templates.refresh_templates()
+    local refreshed = templates.refresh()
+    assert_true(refreshed.snippets_dir == nil, "Expected refresh() to skip snippets")
+  end)
+end)
+
+run_test("LatexTools menu lists install and refresh actions", function()
+  local commands = require("latex-tools.commands")
+  local labels = {}
+
+  with_stubs({
+    [{ vim.ui, "select" }] = function(items, _opts, on_choice)
+      for _, item in ipairs(items) do
+        table.insert(labels, item.label)
+      end
+      on_choice(nil)
+    end,
+  }, function()
+    commands.open_menu()
+  end)
+
+  local haystack = table.concat(labels, "\n")
+  assert_true(haystack:find("Install missing files only", 1, true) ~= nil, "Expected Install menu item")
+  assert_true(haystack:find("Refresh courses.yaml", 1, true) ~= nil, "Expected Refresh metadata menu item")
+  assert_true(haystack:find("Refresh templates", 1, true) ~= nil, "Expected Refresh templates menu item")
+  assert_true(haystack:find("Use minted companion", 1, true) ~= nil, "Expected minted menu item")
+  assert_true(haystack:find("Cited keys", 1, true) ~= nil, "Expected cited keys menu item")
+  assert_true(haystack:find("Equation", 1, true) ~= nil, "Expected equation menu item")
+end)
+
+run_test("list_files_up_to_depth finds nested extensions", function()
+  local found = nil
+  with_stubs({
+    [{ vim.fn, "getcwd" }] = function()
+      return "/tmp/project"
+    end,
+    [{ vim.fn, "glob" }] = function(pattern, _a, _b)
+      if pattern == "/tmp/project/*/*/*.bib" then
+        return { "/tmp/project/refs/extra/refs.bib" }
+      end
+      return {}
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      return path == "/tmp/project/refs/extra/refs.bib" and 1 or 0
+    end,
+    [{ vim.fn, "fnamemodify" }] = function(path, mod)
+      if mod == ":." then
+        return "refs/extra/refs.bib"
+      end
+      return path
+    end,
+  }, function()
+    found = util.list_files_up_to_depth({ "bib" }, 4)
+  end)
+  assert_true(#found == 1 and found[1] == "refs/extra/refs.bib", "Expected nested bib path")
+end)
+
+run_test("bib entries parse title author year into labels", function()
+  local references = require("latex-tools.references")
+  local entries = nil
+  with_stubs({
+    [{ util, "list_files_up_to_depth" }] = function(_ext, _depth)
+      return { "references.bib" }
+    end,
+    [{ vim.fn, "readfile" }] = function(_path)
+      return {
+        "@article{smith2020,",
+        "  author = {Smith, Ada},",
+        "  title = {A Study of Methods},",
+        "  year = {2020},",
+        "}",
+      }
+    end,
+  }, function()
+    entries = references.collect_bib_entries()
+  end)
+  assert_true(#entries == 1, "Expected one bib entry")
+  assert_true(entries[1].key == "smith2020", "Expected key")
+  assert_true(entries[1].label:find("Smith", 1, true) ~= nil, "Expected author in label")
+  assert_true(entries[1].label:find("2020", 1, true) ~= nil, "Expected year in label")
+  assert_true(entries[1].label:find("Study", 1, true) ~= nil, "Expected title in label")
+end)
+
+run_test("cited keys report marks missing keys", function()
+  local references = require("latex-tools.references")
+  new_buffer()
+
+  local report = nil
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return "/tmp/project/main.tex"
+    end,
+    [{ vim.fn, "fnamemodify" }] = function(path, mod)
+      if mod == ":h" then
+        return "/tmp/project"
+      end
+      if mod == ":t" then
+        return "project"
+      end
+      return path
+    end,
+    [{ vim.fn, "isdirectory" }] = function(_path)
+      return 0
+    end,
+    [{ util, "list_tex_files" }] = function(directory, _recursive)
+      if directory == "/tmp/project" then
+        return { "/tmp/project/main.tex" }
+      end
+      return {}
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      if path == "/tmp/project/main.tex" then
+        return { "See \\citep{smith2020} and \\cite{missing2021}." }
+      end
+      return {}
+    end,
+    [{ references, "collect_bib_entries" }] = function()
+      return { { key = "smith2020", label = "smith2020" } }
+    end,
+  }, function()
+    report = references.build_cited_keys_report()
+  end)
+
+  assert_true(type(report) == "table", "Expected report lines")
+  local text = table.concat(report, "\n")
+  assert_true(text:find("smith2020", 1, true) ~= nil, "Expected present key")
+  assert_true(text:find("missing2021", 1, true) ~= nil, "Expected missing key")
+  assert_true(text:find("Missing from .bib: 1", 1, true) ~= nil, "Expected missing count")
+end)
+
+run_test("equation insert writes selected environment", function()
+  local math_mod = require("latex-tools.math")
+  new_buffer()
+  with_stubs({
+    [{ vim.ui, "select" }] = function(items, _opts, on_choice)
+      on_choice(items[1])
+    end,
+    [{ vim.fn, "input" }] = function(_prompt, default)
+      return default
+    end,
+  }, function()
+    math_mod.insert_equation_snippet()
+  end)
+  local lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{equation}")
+  assert_contains(lines, "\\label{eq:}")
+  assert_contains(lines, "\\end{equation}")
+end)
+
+run_test("InstallSnippets seeds bundled academic starters without overwrite", function()
+  local dest_dir = "/tmp/nvim-config/latex-tools/snippets"
+  local written = {}
+  local existing = {
+    [dest_dir .. "/academic/align.tex"] = true,
+  }
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flag)
+      return 1
+    end,
+    [{ vim.fn, "isdirectory" }] = function(path)
+      if path:find("/snippets", 1, true) then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      return existing[path] and 1 or 0
+    end,
+    [{ util, "list_tex_files" }] = function(directory, recursive)
+      assert_true(recursive == true)
+      assert_true(directory:find("/snippets", 1, true) ~= nil)
+      return {
+        directory .. "/academic/align.tex",
+        directory .. "/academic/gather.tex",
+      }
+    end,
+    [{ util, "relative_path" }] = function(path, directory)
+      return path:sub(#directory + 2)
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      return { "% " .. path }
+    end,
+    [{ vim.fn, "writefile" }] = function(_lines, path)
+      written[path] = true
+      existing[path] = true
+      return 0
+    end,
+    [{ vim.fn, "fnamemodify" }] = function(path, mod)
+      if mod == ":h" then
+        return path:match("(.+)/[^/]+$") or path
+      end
+      return path
+    end,
+  }, function()
+    local result = templates.init_snippets()
+    assert_true(result == dest_dir, "Expected snippets dir path")
+  end)
+
+  assert_true(written[dest_dir .. "/academic/align.tex"] == nil, "Expected existing align not overwritten")
+  assert_true(written[dest_dir .. "/academic/gather.tex"] == true, "Expected gather seeded")
 end)
 
 io.write(string.format("\nRESULT: %d passed, %d failed\n", passed, failed))

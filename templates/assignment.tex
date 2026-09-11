@@ -16,9 +16,17 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage{caption}
 \usepackage{subfiles}
+
+% Optional theorem environments (uncomment to use :LatexToolsTheorem / \th):
+% \usepackage{amsthm}
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{definition}{Definition}
+% \newtheorem{lemma}{Lemma}
 
 % Project-local code fences (copied beside this file on create).
 % Default: portable listings (no shell-escape).
@@ -35,6 +43,8 @@
     doi=true,
     eprint=false
 ]{biblatex}
+% Export from JabRef (or similar) into this project as references.bib, or change the path.
+\addbibresource{references.bib}
 
 % -----------------------------
 % Page setup
@@ -103,7 +113,6 @@
 % Content lives in subfiles. Use :LatexToolsSubfile / \tS to add chapters.
 % \subfile{./subfile/chapter-name.tex}
 
-\section{References}
-% Prefer BibTeX/Biber with your .bib file, or add entries below.
+\printbibliography
 
 \end{document}
