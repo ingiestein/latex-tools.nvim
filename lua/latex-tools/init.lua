@@ -90,6 +90,10 @@ function M.create_subfile()
   return subfiles.create_subfile()
 end
 
+function M.use_minted_companion(opts)
+  return require("latex-tools.code_fences").use_minted_companion(opts)
+end
+
 function M.init_metadata(opts)
   return require("latex-tools.state").initialize_course_metadata(opts)
 end

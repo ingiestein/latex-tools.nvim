@@ -6,6 +6,8 @@ local M = {}
 
 local HIDDEN_TEMPLATES = {
   ["subfile.tex"] = true,
+  ["latex-tools-code.tex"] = true,
+  ["latex-tools-code-minted.tex"] = true,
 }
 
 local function template_label(name, path)

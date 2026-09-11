@@ -4,22 +4,22 @@ local M = {}
 
 local snippets = {
   p = {
-    "\\begin{lstlisting}[style=latextoolspython,caption={Model training loop},label={lst:python-model}]",
+    "\\begin{python}",
     "import pandas as pd",
     "from sklearn.model_selection import train_test_split",
-    "\\end{lstlisting}",
+    "\\end{python}",
   },
   r = {
-    "\\begin{lstlisting}[style=latextoolsr,caption={Basic R summary},label={lst:r-summary}]",
+    "\\begin{rcode}",
     "summary(df)",
-    "\\end{lstlisting}",
+    "\\end{rcode}",
   },
   s = {
-    "\\begin{lstlisting}[style=latextoolssql,caption={Cohort extraction query},label={lst:sql-cohort}]",
+    "\\begin{sql}",
     "SELECT patient_id, encounter_date",
     "FROM encounters",
     "WHERE diagnosis_code = 'I10';",
-    "\\end{lstlisting}",
+    "\\end{sql}",
   },
 }
 

@@ -1,0 +1,98 @@
+% latex-tools-code-minted.tex
+% Project-local Markdown-like code fences (opt-in backend: tcolorbox + minted + Pygments).
+% Copied beside each course-aware document; edit freely for that project.
+%
+% Requirements (macOS Homebrew; see README "Minted setup"):
+%   - working latexminted on PATH (TeX Live 2024+ or: brew install pipx && pipx install latexminted)
+%   - brew install pygments  (optional; provides pygmentize)
+%   - if highlighting fails: enable -shell-escape in latexmkrc, e.g.
+%       $xelatex = 'xelatex -shell-escape %O %S';
+%   - ensure ~/.local/bin precedes /Library/TeX/texbin when Homebrew Python 3.14+
+%     breaks TeX Live's latexminted (ArgParser "color" crash → minted "unavailable")
+%
+% Enable in the parent document (and comment out the listings companion):
+%   % \input{latex-tools-code}
+%   \input{latex-tools-code-minted}
+%
+% API (same as latex-tools-code.tex):
+%   \begin{mdcode}{python} ... \end{mdcode}
+%   \begin{mdcode}{python}[minted options={linenos}] ... \end{mdcode}
+%   \begin{python} ... \end{python}
+%   \begin{rcode} ... \end{rcode}
+%   \begin{sql} ... \end{sql}
+
+\usepackage{xcolor}
+\usepackage{minted}
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{minted}
+
+% --- shared Markdown / GitHub-inspired chrome (keep in sync with listings companion) ---
+\tcbset{
+  latextoolscode/.style={
+    enhanced,
+    breakable,
+    colback=gray!6,
+    colframe=gray!35,
+    boxrule=0.4pt,
+    arc=2pt,
+    left=6pt,
+    right=6pt,
+    top=4pt,
+    bottom=4pt,
+    boxsep=2pt,
+    fonttitle=\ttfamily\footnotesize\bfseries,
+    coltitle=gray!15!black,
+    colbacktitle=gray!18,
+    toptitle=2pt,
+    bottomtitle=2pt,
+    lefttitle=6pt,
+    righttitle=6pt,
+  },
+  latextoolsnumbers/.style={
+    minted options={linenos,fontsize=\small,breaklines,frame=none,style=friendly}
+  },
+}
+
+\tcbset{
+  latextoolsminted/.style={
+    listing engine=minted,
+    minted options={breaklines,fontsize=\small,frame=none,style=friendly},
+  }
+}
+
+% Generic fence: language is a Pygments lexer name (python, r, sql, javascript, ...)
+\DeclareTCBListing{mdcode}{ O{} m }{%
+  latextoolscode,
+  latextoolsminted,
+  title=#2,
+  listing only,
+  minted language=#2,
+  #1
+}
+
+\newtcblisting{python}[1][]{%
+  latextoolscode,
+  latextoolsminted,
+  title=python,
+  listing only,
+  minted language=python,
+  #1
+}
+
+\newtcblisting{rcode}[1][]{%
+  latextoolscode,
+  latextoolsminted,
+  title=r,
+  listing only,
+  minted language=r,
+  #1
+}
+
+\newtcblisting{sql}[1][]{%
+  latextoolscode,
+  latextoolsminted,
+  title=sql,
+  listing only,
+  minted language=sql,
+  #1
+}

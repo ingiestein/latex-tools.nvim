@@ -23,7 +23,10 @@ function M.setup()
 
   vim.api.nvim_create_user_command("LatexToolsInitMetadata", function(opts)
     require("latex-tools").init_metadata({ force = opts.bang })
-  end, { bang = true, desc = "Create user course metadata from the bundled example" })
+  end, {
+    bang = true,
+    desc = "Create courses.yaml (bang: back up existing then refresh from plugin)",
+  })
 
   vim.api.nvim_create_user_command("LatexToolsInitCourses", function(opts)
     require("latex-tools").init_metadata({ force = opts.bang })
@@ -31,7 +34,10 @@ function M.setup()
 
   vim.api.nvim_create_user_command("LatexToolsInitTemplates", function(opts)
     require("latex-tools").init_templates({ force = opts.bang })
-  end, { bang = true, desc = "Create user document templates from bundled templates" })
+  end, {
+    bang = true,
+    desc = "Create user document templates (bang: back up existing then refresh from plugin)",
+  })
 
   vim.api.nvim_create_user_command("LatexToolsInitAssignment", function(opts)
     require("latex-tools").init_templates({ force = opts.bang })
@@ -43,11 +49,22 @@ function M.setup()
 
   vim.api.nvim_create_user_command("LatexToolsInit", function(opts)
     require("latex-tools").init_all({ force = opts.bang })
-  end, { bang = true, desc = "Initialize metadata, templates, and snippets" })
+  end, {
+    bang = true,
+    desc = "Initialize metadata, templates, and snippets (bang: backup-refresh both)",
+  })
 
   vim.api.nvim_create_user_command("LatexToolsSubfile", function()
     require("latex-tools").create_subfile()
   end, { desc = "Create a subfile from the current course-aware document" })
+
+  vim.api.nvim_create_user_command("LatexToolsUseMinted", function(opts)
+    -- Bang switches back to portable listings; default enables minted.
+    require("latex-tools").use_minted_companion({ minted = not opts.bang })
+  end, {
+    bang = true,
+    desc = "Use minted code fences (bang: restore listings companion)",
+  })
 
   vim.api.nvim_create_user_command("LatexToolsSnippet", function()
     require("latex-tools").insert_custom_snippet()

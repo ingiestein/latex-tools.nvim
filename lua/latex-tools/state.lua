@@ -133,8 +133,41 @@ function M.get_user_template_path()
   return user_templates_dir() .. "/assignment.tex"
 end
 
-function M.get_user_templates_dir()
-  return user_templates_dir()
+local function user_templates_backup_root()
+  return user_config_dir() .. "/templates-backup"
+end
+
+local function user_metadata_backup_root()
+  return user_config_dir() .. "/metadata-backup"
+end
+
+local function new_timestamped_backup_dir(root)
+  return root .. "/" .. os.date("%Y%m%d-%H%M%S")
+end
+
+local function new_templates_backup_dir()
+  return new_timestamped_backup_dir(user_templates_backup_root())
+end
+
+local function new_metadata_backup_dir()
+  return new_timestamped_backup_dir(user_metadata_backup_root())
+end
+
+local function relocate_to_backup(path, backup_dir)
+  vim.fn.mkdir(backup_dir, "p")
+  local destination = backup_dir .. "/" .. vim.fn.fnamemodify(path, ":t")
+  if vim.fn.rename(path, destination) ~= 0 then
+    return nil
+  end
+  return destination
+end
+
+function M.get_user_templates_backup_root()
+  return user_templates_backup_root()
+end
+
+function M.get_user_metadata_backup_root()
+  return user_metadata_backup_root()
 end
 
 function M.initialize_user_templates(opts)
@@ -150,47 +183,78 @@ function M.initialize_user_templates(opts)
   end
 
   vim.fn.mkdir(destination_dir, "p")
+
   local copied = {}
+  local backed_up = {}
   local created = 0
   local skipped = 0
   local failed = 0
+  local backup_dir = nil
 
   for _, source in ipairs(bundled_files) do
     local name = vim.fn.fnamemodify(source, ":t")
     local destination = destination_dir .. "/" .. name
-    local result, status = copy_bundled_file({
-      source = source,
-      destination = destination,
-      force = options.force,
-      label = name,
-      quiet = true,
-    })
-    if result then
-      table.insert(copied, result)
+    local ready_to_copy = true
+
+    if options.force and is_readable(destination) then
+      if not backup_dir then
+        backup_dir = new_templates_backup_dir()
+      end
+      local relocated = relocate_to_backup(destination, backup_dir)
+      if not relocated then
+        failed = failed + 1
+        ready_to_copy = false
+        vim.notify("Unable to back up " .. destination, vim.log.levels.ERROR)
+      else
+        table.insert(backed_up, relocated)
+      end
     end
-    if status == "created" then
-      created = created + 1
-    elseif status == "skipped" then
-      skipped = skipped + 1
-    else
-      failed = failed + 1
+
+    if ready_to_copy then
+      local result, status = copy_bundled_file({
+        source = source,
+        destination = destination,
+        force = false,
+        label = name,
+        quiet = true,
+      })
+      if result then
+        table.insert(copied, result)
+      end
+      if status == "created" then
+        created = created + 1
+      elseif status == "skipped" then
+        skipped = skipped + 1
+      else
+        failed = failed + 1
+      end
     end
   end
 
-  if created > 0 then
+  if options.force and (#backed_up > 0 or created > 0) and failed == 0 then
+    local message = string.format("Refreshed %d template(s) in %s", created, destination_dir)
+    if backup_dir and #backed_up > 0 then
+      message = message .. string.format("; backed up %d to %s", #backed_up, backup_dir)
+    end
+    vim.notify(message, vim.log.levels.INFO)
+  elseif created > 0 then
     vim.notify(
       string.format("Created %d template(s) in %s", created, destination_dir),
       vim.log.levels.INFO
     )
   elseif skipped > 0 and failed == 0 then
     vim.notify(
-      "Templates already exist in " .. destination_dir .. ". Use :LatexToolsInitTemplates! to overwrite.",
+      "Templates already exist in "
+        .. destination_dir
+        .. ". Use :LatexToolsInitTemplates! to back up existing files and refresh from the plugin.",
       vim.log.levels.WARN
     )
   elseif failed > 0 then
     vim.notify("Unable to initialize one or more templates in " .. destination_dir, vim.log.levels.ERROR)
   end
 
+  copied.backed_up = backed_up
+  copied.backup_dir = backup_dir
   return copied
 end
 
@@ -208,12 +272,52 @@ function M.initialize_course_metadata(opts)
     destination = user_yaml_path()
   end
 
-  return copy_bundled_file({
+  local backup_dir = nil
+  local backed_up = nil
+
+  if options.force and is_readable(destination) then
+    backup_dir = new_metadata_backup_dir()
+    backed_up = relocate_to_backup(destination, backup_dir)
+    if not backed_up then
+      vim.notify("Unable to back up " .. destination, vim.log.levels.ERROR)
+      return nil
+    end
+  elseif is_readable(destination) and not options.force then
+    vim.notify(
+      "Course metadata already exists at "
+        .. destination
+        .. ". Use :LatexToolsInitMetadata! to back up the existing file and refresh from the plugin.",
+      vim.log.levels.WARN
+    )
+    local result = { destination }
+    result.backed_up = nil
+    result.backup_dir = nil
+    return result
+  end
+
+  local path, status = copy_bundled_file({
     source = bundled_yaml_path,
     destination = destination,
-    force = options.force,
+    force = false,
     label = "Course metadata",
+    quiet = options.force and backed_up ~= nil,
   })
+
+  if not path then
+    return nil
+  end
+
+  if options.force and backed_up then
+    vim.notify(
+      string.format("Refreshed course metadata at %s; backed up previous file to %s", path, backed_up),
+      vim.log.levels.INFO
+    )
+  end
+
+  local result = { path }
+  result.backed_up = backed_up
+  result.backup_dir = backup_dir
+  return result
 end
 
 function M.initialize_custom_snippets_dir()
@@ -226,6 +330,84 @@ function M.initialize_custom_snippets_dir()
 
   vim.notify("Custom snippet directory ready at " .. directory, vim.log.levels.INFO)
   return directory
+end
+
+-- Companion .tex files that must live beside a course-aware parent (never plugin paths at compile time).
+local PROJECT_COMPANIONS = {
+  "latex-tools-code.tex",
+  "latex-tools-code-minted.tex",
+}
+
+function M.project_companions()
+  return vim.deepcopy(PROJECT_COMPANIONS)
+end
+
+function M.resolve_companion_source(name)
+  local paths = M.get_paths()
+  local user_path = paths.user_templates_dir .. "/" .. name
+  if is_readable(user_path) then
+    return user_path
+  end
+  local bundled_path = paths.template_dir .. "/" .. name
+  if is_readable(bundled_path) then
+    return bundled_path
+  end
+  return nil
+end
+
+--- Copy companion inputs next to a saved parent document. Never overwrites existing files.
+function M.ensure_project_companions(parent_path)
+  if not parent_path or parent_path == "" then
+    return nil
+  end
+
+  local project_dir = vim.fn.fnamemodify(parent_path, ":h")
+  local created = {}
+  local skipped = {}
+  local failed = {}
+
+  for _, name in ipairs(PROJECT_COMPANIONS) do
+    local destination = project_dir .. "/" .. name
+    local source = M.resolve_companion_source(name)
+    if not source then
+      table.insert(failed, name)
+    else
+      local _, status = copy_bundled_file({
+        source = source,
+        destination = destination,
+        force = false,
+        label = name,
+        quiet = true,
+      })
+      if status == "created" then
+        table.insert(created, name)
+      elseif status == "skipped" then
+        table.insert(skipped, name)
+      else
+        table.insert(failed, name)
+      end
+    end
+  end
+
+  if #created > 0 then
+    vim.notify(
+      "Copied project companions: " .. table.concat(created, ", ") .. " → " .. project_dir,
+      vim.log.levels.INFO
+    )
+  end
+  if #failed > 0 then
+    vim.notify(
+      "Unable to copy project companions: " .. table.concat(failed, ", "),
+      vim.log.levels.ERROR
+    )
+  end
+
+  return {
+    created = created,
+    skipped = skipped,
+    failed = failed,
+    project_dir = project_dir,
+  }
 end
 
 function M.run_command(argv)

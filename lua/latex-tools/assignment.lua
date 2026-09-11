@@ -41,6 +41,15 @@ local function prompt_due_date(default)
 end
 
 function M.insert_assignment_template(template_path)
+  local parent_path = util.get_saved_buffer_path(0)
+  if not parent_path then
+    vim.notify(
+      "Save this buffer first so project companions (e.g. latex-tools-code.tex) can be copied beside it.",
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
   local paths = state.get_paths()
   local tex_path = template_path or paths.tex_template_path
   local courses = load_courses(tex_path)
@@ -107,6 +116,7 @@ function M.insert_assignment_template(template_path)
 
     local lines = util.split_lines(rendered)
     util.insert_template_lines(lines)
+    state.ensure_project_companions(parent_path)
     vim.notify("Inserted rendered LaTeX template for " .. choice.course.course_code, vim.log.levels.INFO)
   end)
 end

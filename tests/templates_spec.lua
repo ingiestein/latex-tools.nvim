@@ -473,7 +473,7 @@ run_test("course metadata bootstrap writes starter file to user config", functio
     end,
   }, function()
     local result = templates.init_course_metadata()
-    assert_true(result == destination, "Expected bootstrap to target the user config YAML")
+    assert_true(result[1] == destination, "Expected bootstrap to target the user config YAML")
   end)
 
   assert_true(mkdir_path == "/tmp/nvim-config/latex-tools", "Expected bootstrap to create the config directory")
@@ -532,6 +532,186 @@ run_test("user templates bootstrap writes bundled templates to user directory", 
   assert_true(type(wrote_lines) == "table" and wrote_lines[1] == "\\documentclass{article}", "Expected bootstrap to copy starter template content")
 end)
 
+run_test("force template refresh backs up conflicts then writes fresh copies", function()
+  local templates_dir = "/tmp/nvim-config/latex-tools/templates"
+  local destination = templates_dir .. "/assignment.tex"
+  local custom_only = templates_dir .. "/my-custom.tex"
+  local bundled_assignment = state.get_paths().template_dir .. "/assignment.tex"
+  local renamed_from = nil
+  local renamed_to = nil
+  local wrote_path = nil
+  local existing = {
+    [destination] = true,
+    [custom_only] = true,
+    [bundled_assignment] = true,
+  }
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      return existing[path] and 1 or 0
+    end,
+    [{ vim.fn, "glob" }] = function(pattern, _a, _b)
+      if pattern:find("/templates/*.tex", 1, true) then
+        return { bundled_assignment }
+      end
+      return {}
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      assert_true(path == bundled_assignment, "Unexpected source template path")
+      return { "% fresh bundled assignment" }
+    end,
+    [{ vim.fn, "writefile" }] = function(_lines, path)
+      wrote_path = path
+      existing[path] = true
+      return 0
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flag)
+      return 1
+    end,
+    [{ vim.fn, "rename" }] = function(from, to)
+      renamed_from = from
+      renamed_to = to
+      existing[from] = nil
+      existing[to] = true
+      return 0
+    end,
+  }, function()
+    local result = templates.init_user_templates({ force = true })
+    assert_true(result[1] == destination, "Expected refreshed assignment path")
+    assert_true(type(result.backup_dir) == "string", "Expected backup_dir on result")
+    assert_true(result.backup_dir:find("templates%-backup/", 1) ~= nil, "Expected templates-backup path")
+    assert_true(result.backed_up[1] == result.backup_dir .. "/assignment.tex", "Expected backed up assignment")
+    assert_true(existing[custom_only] == true, "Expected user-only template to remain")
+  end)
+
+  assert_true(renamed_from == destination, "Expected existing assignment moved to backup")
+  assert_true(renamed_to:find("templates%-backup/", 1) ~= nil, "Expected rename into backup dir")
+  assert_true(wrote_path == destination, "Expected fresh assignment written to templates/")
+end)
+
+run_test("non-force template init skips existing files without backup", function()
+  local destination = "/tmp/nvim-config/latex-tools/templates/assignment.tex"
+  local bundled_assignment = state.get_paths().template_dir .. "/assignment.tex"
+  local rename_called = false
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == destination or path == bundled_assignment then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "glob" }] = function(pattern, _a, _b)
+      if pattern:find("/templates/*.tex", 1, true) then
+        return { bundled_assignment }
+      end
+      return {}
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flag)
+      return 1
+    end,
+    [{ vim.fn, "rename" }] = function(_from, _to)
+      rename_called = true
+      return 0
+    end,
+  }, function()
+    local result = templates.init_user_templates()
+    assert_true(result[1] == destination, "Expected existing path returned as skipped/copied entry")
+    assert_true(result.backup_dir == nil, "Expected no backup dir without force")
+    assert_true(#(result.backed_up or {}) == 0, "Expected no backups without force")
+  end)
+
+  assert_true(rename_called == false, "Expected rename not called without force")
+end)
+
+run_test("force metadata refresh backs up courses.yaml then writes fresh copy", function()
+  local destination = "/tmp/nvim-config/latex-tools/courses.yaml"
+  local bundled = state.get_paths().template_dir .. "/courses.yaml"
+  local renamed_from = nil
+  local renamed_to = nil
+  local wrote_path = nil
+  local existing = {
+    [destination] = true,
+    [bundled] = true,
+  }
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      return existing[path] and 1 or 0
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      assert_true(path == bundled, "Unexpected source YAML path")
+      return { "academic_profile:", "  institution: Fresh University" }
+    end,
+    [{ vim.fn, "writefile" }] = function(_lines, path)
+      wrote_path = path
+      existing[path] = true
+      return 0
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flag)
+      return 1
+    end,
+    [{ vim.fn, "rename" }] = function(from, to)
+      renamed_from = from
+      renamed_to = to
+      existing[from] = nil
+      existing[to] = true
+      return 0
+    end,
+  }, function()
+    local result = templates.init_metadata({ force = true })
+    assert_true(result[1] == destination, "Expected refreshed courses.yaml path")
+    assert_true(type(result.backup_dir) == "string", "Expected backup_dir on result")
+    assert_true(result.backup_dir:find("metadata%-backup/", 1) ~= nil, "Expected metadata-backup path")
+    assert_true(result.backed_up == result.backup_dir .. "/courses.yaml", "Expected backed up courses.yaml")
+  end)
+
+  assert_true(renamed_from == destination, "Expected existing courses.yaml moved to backup")
+  assert_true(renamed_to:find("metadata%-backup/", 1) ~= nil, "Expected rename into metadata-backup")
+  assert_true(wrote_path == destination, "Expected fresh courses.yaml written")
+end)
+
+run_test("non-force metadata init skips existing courses.yaml without backup", function()
+  local destination = "/tmp/nvim-config/latex-tools/courses.yaml"
+  local rename_called = false
+
+  with_stubs({
+    [{ vim.fn, "stdpath" }] = function(kind)
+      assert_true(kind == "config", "Unexpected stdpath request")
+      return "/tmp/nvim-config"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == destination then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "rename" }] = function(_from, _to)
+      rename_called = true
+      return 0
+    end,
+  }, function()
+    local result = templates.init_metadata()
+    assert_true(result[1] == destination, "Expected existing path returned")
+    assert_true(result.backup_dir == nil, "Expected no backup dir without force")
+    assert_true(result.backed_up == nil, "Expected no backup without force")
+  end)
+
+  assert_true(rename_called == false, "Expected rename not called without force")
+end)
+
 run_test("template picker excludes subfile template", function()
   local document_templates = require("latex-tools.templates")
   local bundled_dir = state.get_paths().template_dir
@@ -548,6 +728,8 @@ run_test("template picker excludes subfile template", function()
         return {
           bundled_dir .. "/assignment.tex",
           bundled_dir .. "/subfile.tex",
+          bundled_dir .. "/latex-tools-code.tex",
+          bundled_dir .. "/latex-tools-code-minted.tex",
         }
       end
       return {}
@@ -565,6 +747,11 @@ run_test("template picker excludes subfile template", function()
     local items = document_templates.list_templates()
     for _, item in ipairs(items) do
       assert_true(item.name ~= "subfile.tex", "Expected subfile.tex to be excluded from picker")
+      assert_true(item.name ~= "latex-tools-code.tex", "Expected latex-tools-code.tex to be excluded from picker")
+      assert_true(
+        item.name ~= "latex-tools-code-minted.tex",
+        "Expected latex-tools-code-minted.tex to be excluded from picker"
+      )
     end
     assert_true(#items >= 1, "Expected other templates to remain available")
   end)
@@ -722,12 +909,21 @@ run_test("assignment flow rejects invalid due dates", function()
   local due_prompts = 0
 
   with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return "/tmp/project/main.tex"
+    end,
     [{ vim.fn, "stdpath" }] = function(kind)
       assert_true(kind == "config", "Unexpected stdpath request")
       return "/tmp/nonexistent-nvim-config"
     end,
-    [{ vim.fn, "filereadable" }] = function(_path)
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == "/tmp/project/main.tex" then
+        return 1
+      end
       return 0
+    end,
+    [{ state, "ensure_project_companions" }] = function(_path)
+      return { created = {}, skipped = {}, failed = {} }
     end,
     [{ vim.ui, "select" }] = function(items, _opts, on_choice)
       on_choice(items[1])
@@ -754,14 +950,25 @@ end)
 
 run_test("assignment template flow inserts rendered document", function()
   new_buffer()
+  local companion_parent = nil
 
   with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return "/tmp/project/main.tex"
+    end,
     [{ vim.fn, "stdpath" }] = function(kind)
       assert_true(kind == "config", "Unexpected stdpath request")
       return "/tmp/nonexistent-nvim-config"
     end,
-    [{ vim.fn, "filereadable" }] = function(_path)
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == "/tmp/project/main.tex" then
+        return 1
+      end
       return 0
+    end,
+    [{ state, "ensure_project_companions" }] = function(path)
+      companion_parent = path
+      return { created = { "latex-tools-code.tex" }, skipped = {}, failed = {} }
     end,
     [{ vim.ui, "select" }] = function(items, _opts, on_choice)
       on_choice(items[1])
@@ -783,6 +990,106 @@ run_test("assignment template flow inserts rendered document", function()
   assert_contains(lines, "\\newcommand{\\AssignmentTitle}{Automated Test Assignment}")
   assert_contains(lines, "\\newcommand{\\DueDate}{2026-10-01}")
   assert_contains(lines, "\\newcommand{\\CourseCode}{COURSE 6101-001}")
+  assert_contains(lines, "\\input{latex-tools-code}")
+  assert_true(companion_parent == "/tmp/project/main.tex", "Expected companions copied beside saved parent")
+end)
+
+run_test("assignment insert requires a saved buffer", function()
+  new_buffer()
+
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return ""
+    end,
+    [{ vim.ui, "select" }] = function()
+      error("course picker should not open for unsaved buffer")
+    end,
+  }, function()
+    templates.insert_assignment_template()
+  end)
+end)
+
+run_test("ensure_project_companions copies missing code styles beside parent", function()
+  local project_dir = "/tmp/project-companions"
+  local parent = project_dir .. "/main.tex"
+  local wrote_paths = {}
+  local bundled = state.get_paths().template_dir
+
+  with_stubs({
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path:find(project_dir, 1, true) then
+        return 0
+      end
+      if path:sub(-#"latex-tools-code.tex") == "latex-tools-code.tex"
+        or path:sub(-#"latex-tools-code-minted.tex") == "latex-tools-code-minted.tex" then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      if path:sub(-#"latex-tools-code-minted.tex") == "latex-tools-code-minted.tex" then
+        return { "% minted companion" }
+      end
+      if path:sub(-#"latex-tools-code.tex") == "latex-tools-code.tex" then
+        return { "% listings companion" }
+      end
+      error("Unexpected companion source: " .. path)
+    end,
+    [{ vim.fn, "writefile" }] = function(_lines, path)
+      table.insert(wrote_paths, path)
+      return 0
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flag)
+      return 1
+    end,
+  }, function()
+    local result = state.ensure_project_companions(parent)
+    assert_true(#result.created == 2, "Expected both companions created")
+    assert_true(result.project_dir == project_dir, "Expected project directory")
+    local companions = state.project_companions()
+    assert_true(companions[1] == "latex-tools-code.tex", "Expected listings companion in manifest")
+    assert_true(companions[2] == "latex-tools-code-minted.tex", "Expected minted companion in manifest")
+  end)
+
+  assert_true(#wrote_paths == 2, "Expected both companions written beside parent")
+end)
+
+run_test("UseMinted toggles active code companion input line", function()
+  new_buffer()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+    "% latex-tools: course-aware",
+    "\\input{latex-tools-code}",
+    "\\begin{document}",
+  })
+
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return "/tmp/project/main.tex"
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == "/tmp/project/main.tex" then
+        return 1
+      end
+      return 0
+    end,
+    [{ state, "ensure_project_companions" }] = function(_path)
+      return { created = {}, skipped = {}, failed = {} }
+    end,
+  }, function()
+    local code_fences = require("latex-tools.code_fences")
+    assert_true(code_fences.use_minted_companion({ minted = true }) == "latex-tools-code-minted")
+    assert_contains(get_buffer_lines(), "\\input{latex-tools-code-minted}")
+    assert_true(code_fences.use_minted_companion({ minted = false }) == "latex-tools-code")
+    assert_contains(get_buffer_lines(), "\\input{latex-tools-code}")
+  end)
+end)
+
+run_test("built-in code snippets use short fence environments", function()
+  new_buffer()
+  templates.insert_snippet("p")
+  local lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{python}")
+  assert_contains(lines, "\\end{python}")
 end)
 
 io.write(string.format("\nRESULT: %d passed, %d failed\n", passed, failed))
