@@ -49,3 +49,6 @@ htmlcov/
 *.vrb
 *.aux
 *.log
+
+#Fake main
+fakemain/
