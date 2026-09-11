@@ -2,14 +2,10 @@ local util = require("latex-tools.util")
 
 local M = {}
 
-local function list_images_depth_one()
-  return util.list_files_depth_one({ "png", "jpg", "jpeg", "gif", "webp", "pdf", "svg" })
-end
-
 function M.insert_figure_snippet()
-  local image_paths = list_images_depth_one()
+  local image_paths = util.list_files_up_to_depth({ "png", "jpg", "jpeg", "gif", "webp", "pdf", "svg" }, 4)
   if #image_paths == 0 then
-    vim.notify("No image files found in current directory (depth <= 1)", vim.log.levels.WARN)
+    vim.notify("No image files found under the current directory (depth <= 4)", vim.log.levels.WARN)
     return
   end
 
@@ -29,11 +25,16 @@ function M.insert_figure_snippet()
       caption = default_caption
     end
 
+    local width = vim.fn.input("Image width: ", "0.85\\linewidth")
+    if width == "" then
+      width = "0.85\\linewidth"
+    end
+
     local label = "fig:" .. util.slugify(vim.fn.fnamemodify(path_choice, ":t:r"))
     util.insert_lines_at_cursor({
       "\\begin{figure}[htbp]",
       "  \\centering",
-      "  \\includegraphics[width=0.85\\linewidth]{" .. util.escape_latex_text(path_choice) .. "}",
+      "  \\includegraphics[width=" .. width .. "]{" .. util.escape_latex_text(path_choice) .. "}",
       "  \\caption{" .. util.escape_latex_text(caption) .. "}",
       "  \\label{" .. label .. "}",
       "\\end{figure}",

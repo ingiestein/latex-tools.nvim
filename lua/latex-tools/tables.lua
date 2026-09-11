@@ -81,9 +81,9 @@ function M.insert_basic_table_snippet()
 end
 
 function M.insert_table_from_csv()
-  local csv_files = util.list_files_depth_one({ "csv" })
+  local csv_files = util.list_files_up_to_depth({ "csv" }, 4)
   if #csv_files == 0 then
-    vim.notify("No CSV files found in current directory (depth <= 1)", vim.log.levels.WARN)
+    vim.notify("No CSV files found under the current directory (depth <= 4)", vim.log.levels.WARN)
     return
   end
 

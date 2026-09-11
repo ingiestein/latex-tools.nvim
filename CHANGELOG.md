@@ -10,7 +10,10 @@
 - Added shared fence API `\begin{mdcode}{Lang}` plus `python` / `rcode` / `sql` wrappers; updated `\\tp` / `\\tr` / `\\ts` accordingly.
 - Added `:LatexToolsUseMinted[!]` to switch the parent `\\input` between listings and minted companions.
 - Documented macOS Homebrew minted setup: Python 3.13 `latexminted` wrapper (MacTeX 2025 `minted` 3.7 / `latexminted` 0.6), VimTeX `-shell-escape` / `PATH`, and how to inspect tools from Neovim (`:terminal`, `:messages`).
-- `:LatexToolsInitTemplates!` now backs up conflicting user library files to `templates-backup/<timestamp>/` before writing fresh plugin defaults; user-only templates are left untouched.
+- Clarified setup commands: prefer `:LatexToolsInstall*` (create missing) and `:LatexToolsRefresh*` (confirm, then backup-replace); `:LatexTools` opens a labeled action menu. Legacy `:LatexToolsInit[!]` aliases remain. Added `:LatexToolsCodeMinted` / `:LatexToolsCodeListings`.
+- Upgraded citations/refs for external `.bib` workflows (JabRef): recursive discovery, richer entry labels, multi-key cites, biblatex cite commands, project-wide labels, `:LatexToolsCitedKeys`, and assignment `\addbibresource` / `\printbibliography`.
+- Added `:LatexToolsEquation` / `:LatexToolsTheorem` (`\\te` / `\\th`) and seeded academic starter snippets via `:LatexToolsInstallSnippets`.
+- Figures/CSV/bib discovery now searches up to depth 4; figure insert prompts for width.- `:LatexToolsInitTemplates!` now backs up conflicting user library files to `templates-backup/<timestamp>/` before writing fresh plugin defaults; user-only templates are left untouched.
 - `:LatexToolsInitMetadata!` now backs up existing `courses.yaml` to `metadata-backup/<timestamp>/` before writing the bundled starter (no in-place overwrite).
 - Added `latex-tools/templates/` as the user document template directory, with legacy support for `latex-tools/assignment.tex`.
 - Added template metadata via `% latex-tools: course-aware` so new rendered templates do not require code changes.

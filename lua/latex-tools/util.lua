@@ -55,6 +55,18 @@ function M.build_colspec(num_cols)
 end
 
 function M.list_files_depth_one(extensions)
+  return M.list_files_up_to_depth(extensions, 1)
+end
+
+--- List files with given extensions under cwd, relative paths, sorted.
+--- @param extensions string[] e.g. { "bib", "png" }
+--- @param max_depth integer|nil directory depth below cwd (0 = cwd only). Default 4.
+function M.list_files_up_to_depth(extensions, max_depth)
+  max_depth = max_depth or 4
+  if max_depth < 0 then
+    max_depth = 0
+  end
+
   local cwd = vim.fn.getcwd()
   local seen = {}
   local paths = {}
@@ -70,8 +82,13 @@ function M.list_files_depth_one(extensions)
   end
 
   for _, ext in ipairs(extensions) do
+    -- depth 0: cwd/*.ext
     collect(cwd .. "/*." .. ext)
-    collect(cwd .. "/*/*." .. ext)
+    local prefix = cwd
+    for depth = 1, max_depth do
+      prefix = prefix .. "/*"
+      collect(prefix .. "/*." .. ext)
+    end
   end
 
   table.sort(paths)

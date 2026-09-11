@@ -1,0 +1,17 @@
+% Long table that can break across pages (requires longtable + booktabs).
+\begin{longtable}{p{0.3\linewidth}p{0.3\linewidth}p{0.3\linewidth}}
+  \caption{Long table caption.}\label{tab:long}\\
+  \toprule
+  Column A & Column B & Column C \\
+  \midrule
+  \endfirsthead
+  \toprule
+  Column A & Column B & Column C \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  Value 1 & Value 2 & Value 3 \\
+  Value 4 & Value 5 & Value 6 \\
+  \bottomrule
+\end{longtable}
