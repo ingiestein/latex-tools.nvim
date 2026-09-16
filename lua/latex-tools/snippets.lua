@@ -21,6 +21,18 @@ local snippets = {
     "WHERE diagnosis_code = 'I10';",
     "\\end{sql}",
   },
+  m = {
+    "\\begin{markdown}",
+    "# Heading",
+    "",
+    "Paragraph with **bold** and `code`.",
+    "\\end{markdown}",
+  },
+  l = {
+    "\\begin{plaintext}",
+    "Plain text or log output.",
+    "\\end{plaintext}",
+  },
 }
 
 function M.insert_snippet(snippet_key)

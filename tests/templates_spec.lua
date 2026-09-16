@@ -1096,6 +1096,18 @@ run_test("built-in code snippets use short fence environments", function()
   local lines = get_buffer_lines()
   assert_contains(lines, "\\begin{python}")
   assert_contains(lines, "\\end{python}")
+
+  new_buffer()
+  templates.insert_snippet("m")
+  lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{markdown}")
+  assert_contains(lines, "\\end{markdown}")
+
+  new_buffer()
+  templates.insert_snippet("l")
+  lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{plaintext}")
+  assert_contains(lines, "\\end{plaintext}")
 end)
 
 run_test("refresh_metadata aborts when confirm is declined", function()

@@ -17,7 +17,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - `references.lua` — Label/`\ref` picker, BibTeX/biblatex cite picker, cited-keys report
   - `math.lua` — Equation/align and theorem-style environment inserts
   - `code_fences.lua` — Toggle listings vs minted companion `\input` (`:LatexToolsUseMinted[!]`)
-  - `snippets.lua` — Pre-canned Python/R/SQL fence wrappers (`python` / `rcode` / `sql`)
+  - `snippets.lua` — Pre-canned fence wrappers (`python` / `rcode` / `sql` / `markdown` / `plaintext`)
   - `tex_snippets.lua` — Recursive picker for user-managed `.tex` snippet files
   - `util.lua` — Shared helpers (insertion, escaping, CSV parsing, slugify, file listing, date validation, message sanitization, template metadata)
   - `commands.lua` — `:LatexTools*` user commands + confirm gate for Refresh + `:LatexTools` menu
@@ -59,7 +59,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - Subfiles: created via `:LatexToolsSubfile` / `\tS` from a saved buffer containing `% latex-tools: course-aware`; writes `subfile/<name>.tex` beside the parent and opens it in a right split
   - Snippets: partial blocks in `snippets/**/*.tex`; inserted via `:LatexToolsSnippet` / `\tx`
   - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; `subfile.tex`, `latex-tools-code.tex`, and `latex-tools-code-minted.tex` are excluded from the template picker
-  - Fence API: `\begin{mdcode}{Lang}` plus wrappers `python` / `rcode` / `sql` (listings default; minted opt-in)
+  - Fence API: `\begin{mdcode}{Lang}` plus wrappers `python` / `rcode` / `sql` / `markdown` / `plaintext` (listings default; minted opt-in)
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline, `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.
 - **Validation**: Assignment due dates must pass `util.valid_date()` (`YYYY-MM-DD`, including leap years) before rendering.
@@ -103,7 +103,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 **Custom `.tex` snippets**
 - Store user snippets under `state.get_paths().custom_snippets_dir`; the default is `stdpath("config")/latex-tools/snippets`.
 - `tex_snippets.lua` discovers `.tex` files recursively via `util.list_tex_files(directory, true)`, displays paths relative to the snippets directory, and inserts with `util.insert_lines_at_cursor()`.
-- Keep built-in Python/R/SQL snippets in `snippets.lua`; `\tx` is reserved for user-managed file snippets.
+- Keep built-in fence snippets in `snippets.lua` (`p`/`r`/`s`/`m`/`l`); `\tx` is reserved for user-managed file snippets.
 
 **Change initialization behavior**
 - Bootstrapping logic lives in `state.lua` (`initialize_course_metadata`, `initialize_user_templates`, `initialize_custom_snippets_dir`).

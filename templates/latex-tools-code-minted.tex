@@ -16,10 +16,13 @@
 %
 % API (same as latex-tools-code.tex):
 %   \begin{mdcode}{python} ... \end{mdcode}
-%   \begin{mdcode}{python}[minted options={linenos}] ... \end{mdcode}
 %   \begin{python} ... \end{python}
 %   \begin{rcode} ... \end{rcode}
 %   \begin{sql} ... \end{sql}
+%   \begin{markdown} ... \end{markdown}
+%   \begin{plaintext} ... \end{plaintext}
+%
+% Note: fence envs intentionally have no optional [...] args (tcolorbox + # in body).
 
 \usepackage{xcolor}
 \usepackage{minted}
@@ -48,9 +51,6 @@
     lefttitle=6pt,
     righttitle=6pt,
   },
-  latextoolsnumbers/.style={
-    minted options={linenos,fontsize=\small,breaklines,frame=none,style=friendly}
-  },
 }
 
 \tcbset{
@@ -61,38 +61,51 @@
 }
 
 % Generic fence: language is a Pygments lexer name (python, r, sql, javascript, ...)
-\DeclareTCBListing{mdcode}{ O{} m }{%
+% No optional args — keeps # legal in the body.
+\DeclareTCBListing{mdcode}{ m }{%
   latextoolscode,
   latextoolsminted,
-  title=#2,
+  title=#1,
   listing only,
-  minted language=#2,
-  #1
+  minted language=#1,
 }
 
-\newtcblisting{python}[1][]{%
+\newtcblisting{python}{%
   latextoolscode,
   latextoolsminted,
   title=python,
   listing only,
   minted language=python,
-  #1
 }
 
-\newtcblisting{rcode}[1][]{%
+\newtcblisting{rcode}{%
   latextoolscode,
   latextoolsminted,
   title=r,
   listing only,
   minted language=r,
-  #1
 }
 
-\newtcblisting{sql}[1][]{%
+\newtcblisting{sql}{%
   latextoolscode,
   latextoolsminted,
   title=sql,
   listing only,
   minted language=sql,
-  #1
+}
+
+\newtcblisting{markdown}{%
+  latextoolscode,
+  latextoolsminted,
+  title=markdown,
+  listing only,
+  minted language=markdown,
+}
+
+\newtcblisting{plaintext}{%
+  latextoolscode,
+  latextoolsminted,
+  title=text,
+  listing only,
+  minted language=text,
 }

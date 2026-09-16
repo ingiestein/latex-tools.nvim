@@ -82,6 +82,14 @@ function M.setup(opts)
     require("latex-tools").insert_snippet("s")
   end, "Insert SQL Code Snippet")
 
+  map(prefix .. "m", function()
+    require("latex-tools").insert_snippet("m")
+  end, "Insert Markdown Fence")
+
+  map(prefix .. "l", function()
+    require("latex-tools").insert_snippet("l")
+  end, "Insert Plain Text Fence")
+
   map(prefix .. "T", function()
     require("latex-tools").run_tests()
   end, "Run Template Tests")
@@ -107,6 +115,8 @@ function M.setup(opts)
       { prefix .. "p", desc = "Python Code" },
       { prefix .. "r", desc = "R Code" },
       { prefix .. "s", desc = "SQL Code" },
+      { prefix .. "m", desc = "Markdown Fence" },
+      { prefix .. "l", desc = "Plain Text Fence" },
       { prefix .. "T", desc = "Run Template Tests" },
     })
   end

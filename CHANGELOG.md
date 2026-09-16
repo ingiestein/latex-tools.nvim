@@ -7,7 +7,8 @@
 - Fixed subfile include insertion to use the pre-prompt cursor line so `\\subfile{...}` lands where the user invoked the command.
 - Slimmed the course-aware assignment template and moved Markdown-like code fences into project-local companions (`latex-tools-code.tex` listings default; `latex-tools-code-minted.tex` minted opt-in).
 - Course-aware insert now requires a saved buffer and copies companions beside the project without overwriting existing copies.
-- Added shared fence API `\begin{mdcode}{Lang}` plus `python` / `rcode` / `sql` wrappers; updated `\\tp` / `\\tr` / `\\ts` accordingly.
+- Added shared fence API `\begin{mdcode}{Lang}` plus `python` / `rcode` / `sql` / `markdown` / `plaintext` wrappers; updated `\\tp` / `\\tr` / `\\ts` / `\\tm` / `\\tl` accordingly.
+- Fixed code fences so `#` is legal in fence bodies (Markdown headings, Python comments). Companion envs no longer take optional `[...]` args (tcolorbox/`#1` conflict).
 - Added `:LatexToolsUseMinted[!]` to switch the parent `\\input` between listings and minted companions.
 - Documented macOS Homebrew minted setup: Python 3.13 `latexminted` wrapper (MacTeX 2025 `minted` 3.7 / `latexminted` 0.6), VimTeX `-shell-escape` / `PATH`, and how to inspect tools from Neovim (`:terminal`, `:messages`).
 - Clarified setup commands: prefer `:LatexToolsInstall*` (create missing) and `:LatexToolsRefresh*` (confirm, then backup-replace); `:LatexTools` opens a labeled action menu. Legacy `:LatexToolsInit[!]` aliases remain. Added `:LatexToolsCodeMinted` / `:LatexToolsCodeListings`.

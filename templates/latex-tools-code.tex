@@ -4,10 +4,15 @@
 %
 % API (backend-agnostic — same surface in latex-tools-code-minted.tex):
 %   \begin{mdcode}{Python} ... \end{mdcode}
-%   \begin{mdcode}{Python}[listing options={numbers=left}] ... \end{mdcode}
 %   \begin{python} ... \end{python}   % thin wrappers for common langs
 %   \begin{rcode} ... \end{rcode}
 %   \begin{sql} ... \end{sql}
+%   \begin{markdown} ... \end{markdown}
+%   \begin{plaintext} ... \end{plaintext}
+%
+% Note: fence envs intentionally have no optional [...] args. tcolorbox + listings
+% treats # in the body as a macro parameter when the env is defined with #1.
+% For line numbers, edit listing options below or add a project-local variant.
 %
 % Opt-in minted+Pygments: in the parent, swap to
 %   \input{latex-tools-code-minted}
@@ -53,6 +58,11 @@
   commentstyle=\color{gray!60!black}\itshape
 }
 
+% Plain / Markdown fences: no keyword highlighting (listings has no solid Markdown lexer).
+\lstdefinestyle{latextoolstext}{
+  style=latextoolsbase
+}
+
 % --- shared Markdown / GitHub-inspired chrome (keep in sync with minted companion) ---
 \tcbset{
   latextoolscode/.style={
@@ -75,43 +85,50 @@
     lefttitle=6pt,
     righttitle=6pt,
   },
-  % Optional: \begin{mdcode}{Python}[latextoolsnumbers]
-  latextoolsnumbers/.style={
-    listing options={numbers=left,numberstyle=\tiny\color{gray!70},numbersep=8pt}
-  },
 }
 
-% Generic fence: \begin{mdcode}{Lang}[tcb options] ... \end{mdcode}
+% Generic fence: \begin{mdcode}{Lang} ... \end{mdcode}
 % Lang should be a listings language name (Python, R, SQL, Java, ...) when known.
-\DeclareTCBListing{mdcode}{ O{} m }{%
+% No optional args — keeps # (Python comments, Markdown headings) legal in the body.
+\DeclareTCBListing{mdcode}{ m }{%
   latextoolscode,
-  title=#2,
+  title=#1,
   listing only,
-  listing options={style=latextoolsbase,language=#2},
-  #1
+  listing options={style=latextoolsbase,language=#1},
 }
 
-% Thin wrappers (styled skins) for Neovim \tp / \tr / \ts
-\newtcblisting{python}[1][]{%
+% Thin wrappers (styled skins) for Neovim \tp / \tr / \ts / \tm / \tl
+\newtcblisting{python}{%
   latextoolscode,
   title=python,
   listing only,
   listing options={style=latextoolspython},
-  #1
 }
 
-\newtcblisting{rcode}[1][]{%
+\newtcblisting{rcode}{%
   latextoolscode,
   title=r,
   listing only,
   listing options={style=latextoolsr},
-  #1
 }
 
-\newtcblisting{sql}[1][]{%
+\newtcblisting{sql}{%
   latextoolscode,
   title=sql,
   listing only,
   listing options={style=latextoolssql},
-  #1
+}
+
+\newtcblisting{markdown}{%
+  latextoolscode,
+  title=markdown,
+  listing only,
+  listing options={style=latextoolstext},
+}
+
+\newtcblisting{plaintext}{%
+  latextoolscode,
+  title=text,
+  listing only,
+  listing options={style=latextoolstext},
 }

@@ -193,6 +193,7 @@ Course-aware parents `\input{latex-tools-code}` by default (the **project-local*
 
 ```tex
 \begin{mdcode}{Python}
+# comment — hash is fine inside fences
 print("hello")
 \end{mdcode}
 
@@ -207,9 +208,17 @@ summary(df)
 \begin{sql}
 SELECT 1;
 \end{sql}
+
+\begin{markdown}
+# Notes
+\end{markdown}
+
+\begin{plaintext}
+log line or plain excerpt
+\end{plaintext}
 ```
 
-Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `\ts` insert the short wrappers.
+Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `\ts` / `\tm` / `\tl` insert the short wrappers (Python, R, SQL, Markdown, plain text). Fence environments take **no** optional `[...]` args (that form breaks `#` in the body with tcolorbox).
 
 **Opt in to minted**:
 
@@ -348,7 +357,7 @@ The default companion (`latex-tools-code.tex`) needs no Python and no shell esca
 | `\te` | Equation / align insert |
 | `\th` | Theorem / definition / lemma / proof insert |
 | `\tv` | Table from CSV |
-| `\tp` / `\tr` / `\ts` | Python / R / SQL Markdown-like code fences |
+| `\tp` / `\tr` / `\ts` / `\tm` / `\tl` | Python / R / SQL / Markdown / plain-text fences |
 | `\tT` | Run tests |
 
 ### Bibliography (JabRef / external manager)
@@ -493,7 +502,7 @@ Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `ini
 - `require("latex-tools").insert_equation_snippet()`
 - `require("latex-tools").insert_theorem_snippet()`
 - `require("latex-tools").insert_table_from_csv()`
-- `require("latex-tools").insert_snippet(key)` — `p`, `r`, or `s`
+- `require("latex-tools").insert_snippet(key)` — `p`, `r`, `s`, `m`, or `l`
 
 ### Testing
 

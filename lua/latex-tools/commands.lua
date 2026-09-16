@@ -97,6 +97,12 @@ function M.open_menu()
     { label = "Insert: Theorem / definition / proof", run = function()
       require("latex-tools").insert_theorem_snippet()
     end },
+    { label = "Insert: Markdown fence", run = function()
+      require("latex-tools").insert_snippet("m")
+    end },
+    { label = "Insert: Plain text fence", run = function()
+      require("latex-tools").insert_snippet("l")
+    end },
     { label = "Report: Cited keys vs .bib (read-only)", run = function()
       require("latex-tools").report_cited_keys()
     end },
