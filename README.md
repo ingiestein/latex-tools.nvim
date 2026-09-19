@@ -216,9 +216,19 @@ SELECT 1;
 \begin{plaintext}
 log line or plain excerpt
 \end{plaintext}
+
+\begin{json}
+{"ok": true}
+\end{json}
+
+\begin{ccode}
+int main(void) { return 0; }
+\end{ccode}
 ```
 
-Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `\ts` / `\tm` / `\tl` insert the short wrappers (Python, R, SQL, Markdown, plain text). Fence environments take **no** optional `[...]` args (that form breaks `#` in the body with tcolorbox).
+Curated wrappers (same in both backends): `python`, `rcode`, `sql`, `markdown`, `plaintext`, `javascript`, `typescript`, `java`, `ccode` (C), `cpp`, `csharp`, `rust`, `json`, `go`, `bash`. Prefer these over `\begin{mdcode}{…}` when the listings backend has no lexer for that language (e.g. JSON, Rust) — otherwise listings errors with `language … undefined`.
+
+Use `\begin{mdcode}{Lang}` only when `Lang` is a real listings (or Pygments, for minted) language name. Code fences nest under `\tc`: `\tcp` / `\tcr` / `\tcs` / `\tcm` / `\tcl` for Python / R / SQL / Markdown / plain text; other languages use `\tcj`, `\tct`, …; `\tcf` or `:LatexToolsCodeFence` opens a language picker. Fence environments take **no** optional `[...]` args (that form breaks `#` in the body with tcolorbox).
 
 **Opt in to minted**:
 
@@ -228,7 +238,7 @@ Use `\begin{mdcode}{Lang}` for any listings/Pygments language; `\tp` / `\tr` / `
 
 Restore listings with `:LatexToolsCodeListings` (alias: `:LatexToolsUseMinted!`). Or edit the parent `\input{...}` line by hand.
 
-Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsRefreshTemplates` to refresh the **user library** (with confirm + backup); that does not change companions already copied into an existing project.
+Edit the project-local companion to restyle fences for that paper only. Re-run `:LatexToolsRefreshTemplates` to refresh the **user library** (with confirm + backup); that does **not** change companions already copied into an existing project. To pick up new fence languages in an old paper, copy the refreshed `latex-tools-code*.tex` beside `main.tex` (or delete the project copies so the next companion ensure step can recreate them).
 
 #### Minted setup (macOS / Homebrew)
 
@@ -341,33 +351,42 @@ The default companion (`latex-tools-code.tex`) needs no Python and no shell esca
 
 ## Everyday Tools
 
+Keymaps use prefix `\t` (configurable). Related actions nest under a second letter; which-key shows the groups when installed.
+
 | Keymap | Action |
 | --- | --- |
 | `\ta` | Document template picker |
 | `\tS` | Create subfile chapter from saved course-aware document |
 | `\tx` | Custom `.tex` snippet picker (includes seeded academic starters) |
-| `\tf` | Figure with image picker, caption, and width |
-| `\tF` | Placeholder figure |
-| `\tb` | Interactive table builder |
-| `\tB` | Placeholder table |
-| `\tn` | Footnote prompt |
-| `\tR` | Reference to a project label |
-| `\tk` | BibTeX / biblatex citation (from project `.bib`) |
-| `\tc` | Cited-keys report vs discovered `.bib` (read-only) |
-| `\te` | Equation / align insert |
-| `\th` | Theorem / definition / lemma / proof insert |
-| `\tv` | Table from CSV |
-| `\tp` / `\tr` / `\ts` / `\tm` / `\tl` | Python / R / SQL / Markdown / plain-text fences |
+| `\tff` / `\tfp` | Figure picker / placeholder |
+| `\tbi` / `\tbp` / `\tbc` | Table interactive / placeholder / from CSV |
+| `\tcf` | Code fence language picker |
+| `\tcp` / `\tcr` / `\tcs` / `\tcm` / `\tcl` | Python / R / SQL / Markdown / plain-text fences |
+| `\tcj` / `\tct` / `\tca` / `\tcc` / `\tcx` / `\tch` | JavaScript / TypeScript / Java / C / C++ / C# |
+| `\tcu` / `\tco` / `\tcg` / `\tcb` | Rust / JSON / Go / Bash |
+| `\trr` / `\trk` / `\trc` / `\trn` | Label ref / cite / cited-keys report / footnote |
+| `\tme` / `\tmh` | Equation / theorem |
 | `\tT` | Run tests |
+
+**Keymap migration** (flat → nested):
+
+| Old | New |
+| --- | --- |
+| `\tf` / `\tF` | `\tff` / `\tfp` |
+| `\tb` / `\tB` / `\tv` | `\tbi` / `\tbp` / `\tbc` |
+| `\tp` / `\tr` / `\ts` / `\tm` / `\tl` / `\tC` | `\tcp` / `\tcr` / `\tcs` / `\tcm` / `\tcl` / `\tcf` |
+| `\tR` / `\tk` / `\tc` / `\tn` | `\trr` / `\trk` / `\trc` / `\trn` |
+| `\te` / `\th` | `\tme` / `\tmh` |
+| `\ta` / `\tx` / `\tS` / `\tT` | unchanged |
 
 ### Bibliography (JabRef / external manager)
 
 The plugin never writes bibliography entries. Manage your library in JabRef (or similar), export a `.bib` into the project (default name `references.bib` beside the parent `.tex`), then:
 
-1. Cite with `:LatexToolsBib` / `\tk` (multi-key supported; recursive `.bib` discovery up to depth 4)
+1. Cite with `:LatexToolsBib` / `\trk` (multi-key supported; recursive `.bib` discovery up to depth 4)
 2. Compile with biber (template sets `% !BIB program = biber`)
 3. `\printbibliography` is already in the course-aware assignment template
-4. `:LatexToolsCitedKeys` / `\tc` lists keys cited in the project and flags any missing from discovered `.bib` files
+4. `:LatexToolsCitedKeys` / `\trc` lists keys cited in the project and flags any missing from discovered `.bib` files
 
 `:LatexToolsInstallSnippets` creates `~/.config/nvim/latex-tools/snippets/` and copies **missing** bundled starters from the plugin’s `snippets/academic/` (align, gather, longtable, two-panel figure, algorithm, quote). Existing user files are never overwritten.
 
@@ -439,6 +458,7 @@ Legacy aliases: `:LatexToolsInit[!]`, `:LatexToolsInitMetadata[!]`, `:LatexTools
 | `:LatexToolsCodeMinted` | Switch parent to minted fences |
 | `:LatexToolsCodeListings` | Switch parent to portable listings fences |
 | `:LatexToolsUseMinted[!]` | Alias: CodeMinted (bang: CodeListings) |
+| `:LatexToolsCodeFence` | Pick and insert a curated code fence wrapper |
 | `:LatexToolsSnippet` | Choose and insert a custom `.tex` snippet |
 
 ### Writing helpers
@@ -503,6 +523,8 @@ Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `ini
 - `require("latex-tools").insert_theorem_snippet()`
 - `require("latex-tools").insert_table_from_csv()`
 - `require("latex-tools").insert_snippet(key)` — `p`, `r`, `s`, `m`, or `l`
+- `require("latex-tools").insert_fence_env(env)` — insert a curated fence by env name (e.g. `json`, `ccode`)
+- `require("latex-tools").pick_code_fence()` — language picker for all curated fence wrappers
 
 ### Testing
 

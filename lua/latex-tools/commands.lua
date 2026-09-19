@@ -97,6 +97,9 @@ function M.open_menu()
     { label = "Insert: Theorem / definition / proof", run = function()
       require("latex-tools").insert_theorem_snippet()
     end },
+    { label = "Insert: Code fence (language picker)", run = function()
+      require("latex-tools").pick_code_fence()
+    end },
     { label = "Insert: Markdown fence", run = function()
       require("latex-tools").insert_snippet("m")
     end },
@@ -267,6 +270,10 @@ function M.setup()
     bang = true,
     desc = "Alias: CodeMinted (bang: CodeListings)",
   })
+
+  vim.api.nvim_create_user_command("LatexToolsCodeFence", function()
+    require("latex-tools").pick_code_fence()
+  end, { desc = "Pick and insert a code fence language wrapper" })
 
   vim.api.nvim_create_user_command("LatexToolsSnippet", function()
     require("latex-tools").insert_custom_snippet()

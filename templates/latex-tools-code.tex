@@ -3,16 +3,27 @@
 % Copied beside each course-aware document; edit freely for that project.
 %
 % API (backend-agnostic — same surface in latex-tools-code-minted.tex):
-%   \begin{mdcode}{Python} ... \end{mdcode}
-%   \begin{python} ... \end{python}   % thin wrappers for common langs
+%   \begin{mdcode}{Python} ... \end{mdcode}   % Lang must be a listings language name
+%   \begin{python} ... \end{python}            % thin wrappers (preferred)
 %   \begin{rcode} ... \end{rcode}
 %   \begin{sql} ... \end{sql}
 %   \begin{markdown} ... \end{markdown}
 %   \begin{plaintext} ... \end{plaintext}
+%   \begin{javascript} ... \end{javascript}
+%   \begin{typescript} ... \end{typescript}
+%   \begin{java} ... \end{java}
+%   \begin{ccode} ... \end{ccode}             % C (env name avoids bare \begin{c})
+%   \begin{cpp} ... \end{cpp}
+%   \begin{csharp} ... \end{csharp}
+%   \begin{rust} ... \end{rust}
+%   \begin{json} ... \end{json}
+%   \begin{go} ... \end{go}
+%   \begin{bash} ... \end{bash}
 %
 % Note: fence envs intentionally have no optional [...] args. tcolorbox + listings
 % treats # in the body as a macro parameter when the env is defined with #1.
 % For line numbers, edit listing options below or add a project-local variant.
+% Langs without a solid listings lexer (typescript, rust, json, go) use base style only.
 %
 % Opt-in minted+Pygments: in the parent, swap to
 %   \input{latex-tools-code-minted}
@@ -22,7 +33,7 @@
 \usepackage{listings}
 \usepackage[most]{tcolorbox}
 
-% --- listings language skins (known langs); mdcode falls back to base ---
+% --- listings language skins (known langs); unknown-lang wrappers use latextoolstext ---
 \lstdefinestyle{latextoolsbase}{
   basicstyle=\ttfamily\small,
   showstringspaces=false,
@@ -58,7 +69,47 @@
   commentstyle=\color{gray!60!black}\itshape
 }
 
-% Plain / Markdown fences: no keyword highlighting (listings has no solid Markdown lexer).
+\lstdefinestyle{latextoolsjava}{
+  style=latextoolsbase,
+  language=Java,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+\lstdefinestyle{latextoolsc}{
+  style=latextoolsbase,
+  language=C,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+\lstdefinestyle{latextoolscpp}{
+  style=latextoolsbase,
+  language=C++,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+\lstdefinestyle{latextoolscsharp}{
+  style=latextoolsbase,
+  language=[Sharp]C,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+\lstdefinestyle{latextoolsbash}{
+  style=latextoolsbase,
+  language=bash,
+  keywordstyle=\color{teal!70!black}\bfseries,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray!60!black}\itshape
+}
+
+% Plain / Markdown / unsupported-lexer fences: no keyword highlighting.
 \lstdefinestyle{latextoolstext}{
   style=latextoolsbase
 }
@@ -97,7 +148,7 @@
   listing options={style=latextoolsbase,language=#1},
 }
 
-% Thin wrappers (styled skins) for Neovim \tp / \tr / \ts / \tm / \tl
+% Thin wrappers for Neovim shortcuts / fence picker
 \newtcblisting{python}{%
   latextoolscode,
   title=python,
@@ -131,4 +182,74 @@
   title=text,
   listing only,
   listing options={style=latextoolstext},
+}
+
+\newtcblisting{javascript}{%
+  latextoolscode,
+  title=javascript,
+  listing only,
+  listing options={style=latextoolsjava},
+}
+
+\newtcblisting{typescript}{%
+  latextoolscode,
+  title=typescript,
+  listing only,
+  listing options={style=latextoolstext},
+}
+
+\newtcblisting{java}{%
+  latextoolscode,
+  title=java,
+  listing only,
+  listing options={style=latextoolsjava},
+}
+
+\newtcblisting{ccode}{%
+  latextoolscode,
+  title=c,
+  listing only,
+  listing options={style=latextoolsc},
+}
+
+\newtcblisting{cpp}{%
+  latextoolscode,
+  title=c++,
+  listing only,
+  listing options={style=latextoolscpp},
+}
+
+\newtcblisting{csharp}{%
+  latextoolscode,
+  title=c\#,
+  listing only,
+  listing options={style=latextoolscsharp},
+}
+
+\newtcblisting{rust}{%
+  latextoolscode,
+  title=rust,
+  listing only,
+  listing options={style=latextoolstext},
+}
+
+\newtcblisting{json}{%
+  latextoolscode,
+  title=json,
+  listing only,
+  listing options={style=latextoolstext},
+}
+
+\newtcblisting{go}{%
+  latextoolscode,
+  title=go,
+  listing only,
+  listing options={style=latextoolstext},
+}
+
+\newtcblisting{bash}{%
+  latextoolscode,
+  title=bash,
+  listing only,
+  listing options={style=latextoolsbash},
 }

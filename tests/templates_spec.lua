@@ -1110,6 +1110,42 @@ run_test("built-in code snippets use short fence environments", function()
   assert_contains(lines, "\\end{plaintext}")
 end)
 
+run_test("code fence picker inserts selected language wrapper", function()
+  new_buffer()
+  with_stubs({
+    [{ vim.ui, "select" }] = function(items, _opts, on_choice)
+      local json_item = nil
+      for _, item in ipairs(items) do
+        if item.env == "json" then
+          json_item = item
+          break
+        end
+      end
+      assert_true(json_item ~= nil, "Expected json in fence catalog")
+      on_choice(json_item)
+    end,
+  }, function()
+    templates.pick_code_fence()
+  end)
+  local lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{json}")
+  assert_contains(lines, "\\end{json}")
+end)
+
+run_test("insert_fence_env inserts curated fence by env name", function()
+  new_buffer()
+  templates.insert_fence_env("json")
+  local lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{json}")
+  assert_contains(lines, "\\end{json}")
+
+  new_buffer()
+  templates.insert_fence_env("ccode")
+  lines = get_buffer_lines()
+  assert_contains(lines, "\\begin{ccode}")
+  assert_contains(lines, "\\end{ccode}")
+end)
+
 run_test("refresh_metadata aborts when confirm is declined", function()
   local commands = require("latex-tools.commands")
   local rename_called = false

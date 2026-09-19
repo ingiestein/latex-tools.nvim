@@ -37,6 +37,14 @@ function M.insert_snippet(snippet_key)
   return snippets.insert_snippet(snippet_key)
 end
 
+function M.insert_fence_env(env)
+  return snippets.insert_fence_env(env)
+end
+
+function M.pick_code_fence()
+  return snippets.pick_code_fence()
+end
+
 function M.insert_custom_snippet()
   return tex_snippets.insert_custom_snippet()
 end

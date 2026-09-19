@@ -21,6 +21,16 @@
 %   \begin{sql} ... \end{sql}
 %   \begin{markdown} ... \end{markdown}
 %   \begin{plaintext} ... \end{plaintext}
+%   \begin{javascript} ... \end{javascript}
+%   \begin{typescript} ... \end{typescript}
+%   \begin{java} ... \end{java}
+%   \begin{ccode} ... \end{ccode}
+%   \begin{cpp} ... \end{cpp}
+%   \begin{csharp} ... \end{csharp}
+%   \begin{rust} ... \end{rust}
+%   \begin{json} ... \end{json}
+%   \begin{go} ... \end{go}
+%   \begin{bash} ... \end{bash}
 %
 % Note: fence envs intentionally have no optional [...] args (tcolorbox + # in body).
 
@@ -108,4 +118,84 @@
   title=text,
   listing only,
   minted language=text,
+}
+
+\newtcblisting{javascript}{%
+  latextoolscode,
+  latextoolsminted,
+  title=javascript,
+  listing only,
+  minted language=javascript,
+}
+
+\newtcblisting{typescript}{%
+  latextoolscode,
+  latextoolsminted,
+  title=typescript,
+  listing only,
+  minted language=typescript,
+}
+
+\newtcblisting{java}{%
+  latextoolscode,
+  latextoolsminted,
+  title=java,
+  listing only,
+  minted language=java,
+}
+
+\newtcblisting{ccode}{%
+  latextoolscode,
+  latextoolsminted,
+  title=c,
+  listing only,
+  minted language=c,
+}
+
+\newtcblisting{cpp}{%
+  latextoolscode,
+  latextoolsminted,
+  title=c++,
+  listing only,
+  minted language=cpp,
+}
+
+\newtcblisting{csharp}{%
+  latextoolscode,
+  latextoolsminted,
+  title=c\#,
+  listing only,
+  minted language=csharp,
+}
+
+\newtcblisting{rust}{%
+  latextoolscode,
+  latextoolsminted,
+  title=rust,
+  listing only,
+  minted language=rust,
+}
+
+\newtcblisting{json}{%
+  latextoolscode,
+  latextoolsminted,
+  title=json,
+  listing only,
+  minted language=json,
+}
+
+\newtcblisting{go}{%
+  latextoolscode,
+  latextoolsminted,
+  title=go,
+  listing only,
+  minted language=go,
+}
+
+\newtcblisting{bash}{%
+  latextoolscode,
+  latextoolsminted,
+  title=bash,
+  listing only,
+  minted language=bash,
 }
