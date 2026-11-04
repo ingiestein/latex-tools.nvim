@@ -917,19 +917,17 @@ run_test("template metadata marks bundled nih-r01 as scaffold", function()
   assert_true(metadata["scaffold-dir"] == "nih-r01", "Expected scaffold-dir metadata")
 end)
 
-run_test("scaffold insert requires saved buffer and writes sections", function()
+run_test("scaffold insert requires named buffer and writes sections", function()
   local scaffold = require("latex-tools.scaffold")
   local template_path = state.bundled_template_dir() .. "/nih-r01.tex"
   local parent = "/tmp/nih-scaffold/main.tex"
   local written = {}
+  local wrote_buffer = false
 
   new_buffer()
   with_stubs({
     [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
       return ""
-    end,
-    [{ vim.fn, "filereadable" }] = function(_path)
-      return 0
     end,
   }, function()
     scaffold.insert_scaffold_template(template_path)
@@ -941,7 +939,11 @@ run_test("scaffold insert requires saved buffer and writes sections", function()
       return parent
     end,
     [{ vim.fn, "filereadable" }] = function(path)
-      if path == parent or path == template_path then
+      -- Parent need not exist yet (:e main.tex); sources must be readable.
+      if path == parent then
+        return 0
+      end
+      if path == template_path then
         return 1
       end
       if path:find("/nih%-r01/", 1) and path:sub(-4) == ".tex" then
@@ -950,7 +952,6 @@ run_test("scaffold insert requires saved buffer and writes sections", function()
       if path:sub(-#"refs.bib") == "refs.bib" and path:find("nih%-r01", 1) then
         return 1
       end
-      -- Project destinations do not exist yet.
       return 0
     end,
     [{ vim.fn, "isdirectory" }] = function(path)
@@ -983,7 +984,12 @@ run_test("scaffold insert requires saved buffer and writes sections", function()
       return 0
     end,
     [{ vim.fn, "mkdir" }] = function(_path, _flags)
-      return 0
+      return 1
+    end,
+    [{ vim, "cmd" }] = function(cmd)
+      if tostring(cmd):find("write", 1, true) then
+        wrote_buffer = true
+      end
     end,
     [{ util, "list_tex_files" }] = function(directory, _recursive)
       if directory:find("/sections", 1) then
@@ -1000,6 +1006,7 @@ run_test("scaffold insert requires saved buffer and writes sections", function()
 
   local lines = get_buffer_lines()
   assert_contains(lines, "\\input{sections/cover}")
+  assert_true(wrote_buffer, "Expected parent buffer to be written")
   assert_true(written["/tmp/nih-scaffold/sections/cover.tex"] ~= nil, "Expected cover.tex to be written")
   assert_true(
     written["/tmp/nih-scaffold/sections/specific-aims.tex"] ~= nil,

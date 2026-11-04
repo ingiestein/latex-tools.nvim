@@ -97,7 +97,8 @@ function M.insert_template()
       return
     end
 
-    if choice.scaffold then
+    -- Re-check on disk in case picker item was stale / missing the scaffold flag.
+    if choice.scaffold or util.is_scaffold_template(choice.path) then
       scaffold.insert_scaffold_template(choice.path)
       return
     end

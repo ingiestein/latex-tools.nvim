@@ -185,7 +185,7 @@ The picker will run the course/title/due-date flow and render it with `courses.y
 % latex-tools: scaffold-dir=nih-r01
 ```
 
-Selecting it requires a **saved** buffer. The parent content is inserted into the buffer, and missing files under `sections/` (plus optional `refs.bib`) are copied beside the parent from the payload directory. Existing project files are never overwritten.
+Selecting it requires a **named** buffer (e.g. `:edit main.tex` / `:w`). The parent content is inserted and written, and missing files under `sections/` (plus optional `refs.bib`) are copied beside the parent from the payload directory. Existing project files are never overwritten.
 
 ### Bundled NIH R01 grant scaffold
 

@@ -37,13 +37,18 @@ local function copy_missing_file(source, destination)
     return "skipped"
   end
 
-  vim.fn.mkdir(vim.fn.fnamemodify(destination, ":h"), "p")
-  local ok, lines = pcall(vim.fn.readfile, source)
-  if not ok then
+  local dest_dir = vim.fn.fnamemodify(destination, ":h")
+  if vim.fn.mkdir(dest_dir, "p") == -1 and vim.fn.isdirectory(dest_dir) ~= 1 then
     return "failed"
   end
-  local write_ok = pcall(vim.fn.writefile, lines, destination)
-  if not write_ok then
+
+  local ok, lines = pcall(vim.fn.readfile, source)
+  if not ok or type(lines) ~= "table" then
+    return "failed"
+  end
+
+  local write_ok, write_result = pcall(vim.fn.writefile, lines, destination)
+  if not write_ok or write_result ~= 0 then
     return "failed"
   end
   return "created"
@@ -52,12 +57,38 @@ end
 --- Copy scaffold payload (sections/, refs.bib, …) beside a saved parent .tex.
 function M.ensure_scaffold_files(parent_path, scaffold_dir)
   local parent_dir = vim.fn.fnamemodify(parent_path, ":h")
+  if parent_dir == "" then
+    parent_dir = "."
+  end
+
   local created = {}
   local skipped = {}
   local failed = {}
 
-  local section_sources = util.list_tex_files(scaffold_dir .. "/sections", false)
+  local sections_dir = scaffold_dir .. "/sections"
+  local section_sources = util.list_tex_files(sections_dir, false)
   table.sort(section_sources)
+
+  if #section_sources == 0 then
+    return {
+      created = created,
+      skipped = skipped,
+      failed = failed,
+      missing_sections = true,
+      sections_dir = sections_dir,
+    }
+  end
+
+  if vim.fn.mkdir(parent_dir .. "/sections", "p") == -1 and vim.fn.isdirectory(parent_dir .. "/sections") ~= 1 then
+    return {
+      created = created,
+      skipped = skipped,
+      failed = { "sections/" },
+      missing_sections = false,
+      sections_dir = sections_dir,
+    }
+  end
+
   for _, source in ipairs(section_sources) do
     local name = vim.fn.fnamemodify(source, ":t")
     local destination = parent_dir .. "/sections/" .. name
@@ -84,14 +115,20 @@ function M.ensure_scaffold_files(parent_path, scaffold_dir)
     end
   end
 
-  return { created = created, skipped = skipped, failed = failed }
+  return {
+    created = created,
+    skipped = skipped,
+    failed = failed,
+    missing_sections = false,
+    sections_dir = sections_dir,
+  }
 end
 
 function M.insert_scaffold_template(template_path)
-  local parent_path = util.get_saved_buffer_path(0)
+  local parent_path = util.get_project_buffer_path(0)
   if not parent_path then
     vim.notify(
-      "Save this buffer first so scaffold files (sections/, refs.bib) can be written beside it.",
+      "Name this buffer first (e.g. :edit main.tex) so sections/ can be written beside it.",
       vim.log.levels.ERROR
     )
     return
@@ -101,7 +138,11 @@ function M.insert_scaffold_template(template_path)
   local scaffold_dir = scaffold_dir_for_template(template_path, metadata)
   if not scaffold_dir then
     vim.notify(
-      "Scaffold directory not found for " .. vim.fn.fnamemodify(template_path, ":t"),
+      "Scaffold directory not found for "
+        .. vim.fn.fnamemodify(template_path, ":t")
+        .. " (expected sibling dir or bundled templates/"
+        .. (metadata["scaffold-dir"] or vim.fn.fnamemodify(template_path, ":t:r"))
+        .. "/)",
       vim.log.levels.ERROR
     )
     return
@@ -113,9 +154,37 @@ function M.insert_scaffold_template(template_path)
     return
   end
 
+  -- Ensure the parent directory exists before writing companions.
+  local parent_dir = vim.fn.fnamemodify(parent_path, ":h")
+  if parent_dir ~= "" and parent_dir ~= "." then
+    vim.fn.mkdir(parent_dir, "p")
+  end
+
   util.insert_template_lines(lines)
 
+  -- Persist the parent on disk so \\input{sections/...} resolves next to a real file.
+  local write_ok, write_err = pcall(function()
+    vim.cmd("silent write!")
+  end)
+  if not write_ok then
+    vim.notify(
+      "Inserted template text but could not write "
+        .. parent_path
+        .. ": "
+        .. tostring(write_err),
+      vim.log.levels.WARN
+    )
+  end
+
   local result = M.ensure_scaffold_files(parent_path, scaffold_dir)
+  if result.missing_sections then
+    vim.notify(
+      "No section .tex files found in " .. tostring(result.sections_dir),
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
   if #result.failed > 0 then
     vim.notify(
       "Unable to create scaffold files: " .. table.concat(result.failed, ", "),
@@ -131,6 +200,9 @@ function M.insert_scaffold_template(template_path)
   end
   if #result.skipped > 0 then
     table.insert(parts, "kept existing " .. #result.skipped .. " file(s)")
+  end
+  if #result.created == 0 and #result.skipped == 0 and #result.failed == 0 then
+    table.insert(parts, "no section files written (unexpected)")
   end
   vim.notify(table.concat(parts, "; "), vim.log.levels.INFO)
 end

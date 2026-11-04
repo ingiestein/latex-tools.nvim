@@ -60,7 +60,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - Subfiles: created via `:LatexToolsSubfile` / `\tS` from a saved buffer containing `% latex-tools: course-aware`; writes `subfile/<name>.tex` beside the parent and opens it in a right split
   - Snippets: partial blocks in `snippets/**/*.tex`; inserted via `:LatexToolsSnippet` / `\tx`
   - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; `subfile.tex`, `latex-tools-code.tex`, and `latex-tools-code-minted.tex` are excluded from the template picker
-  - Mark multi-file scaffolds with `% latex-tools: scaffold` and `% latex-tools: scaffold-dir=<name>`; payload lives in `templates/<name>/` (e.g. bundled NIH R01). Insert requires a saved buffer; never overwrites existing project `sections/` files
+  - Mark multi-file scaffolds with `% latex-tools: scaffold` and `% latex-tools: scaffold-dir=<name>`; payload lives in `templates/<name>/` (e.g. bundled NIH R01). Insert requires a named buffer (`:edit main.tex`); writes the parent and creates missing `sections/` files beside it (never overwrites existing)
   - Fence API: `\begin{mdcode}{Lang}` plus curated wrappers (`python`, `rcode`, `sql`, `markdown`, `plaintext`, `javascript`, `typescript`, `java`, `ccode`, `cpp`, `csharp`, `rust`, `json`, `go`, `bash`; listings default; minted opt-in). Prefer wrappers when listings has no lexer. Code inserts nest under `\tc*` (`\tcf` / `:LatexToolsCodeFence` for picker).
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline, `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.

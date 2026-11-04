@@ -256,6 +256,21 @@ function M.get_saved_buffer_path(buf)
   return path
 end
 
+--- Path for writing project companions/scaffolds beside the buffer.
+--- Accepts a named normal buffer even when the file is not on disk yet (`:e new.tex`).
+function M.get_project_buffer_path(buf)
+  buf = buf or 0
+  local path = vim.api.nvim_buf_get_name(buf)
+  if path == "" then
+    return nil
+  end
+  local buftype = vim.bo[buf].buftype
+  if buftype ~= nil and buftype ~= "" then
+    return nil
+  end
+  return path
+end
+
 function M.sanitize_filename(value)
   local name = value:gsub("^%s+", ""):gsub("%s+$", "")
   name = name:gsub("%.tex$", "")
