@@ -910,6 +910,104 @@ run_test("template metadata marks bundled assignment as course-aware", function(
   assert_true(util.is_course_aware_template(assignment_path), "Expected bundled assignment metadata to be detected")
 end)
 
+run_test("template metadata marks bundled nih-r01 as scaffold", function()
+  local path = state.get_paths().template_dir .. "/nih-r01.tex"
+  assert_true(util.is_scaffold_template(path), "Expected bundled nih-r01 metadata to be detected")
+  local metadata = util.parse_template_metadata(path)
+  assert_true(metadata["scaffold-dir"] == "nih-r01", "Expected scaffold-dir metadata")
+end)
+
+run_test("scaffold insert requires saved buffer and writes sections", function()
+  local scaffold = require("latex-tools.scaffold")
+  local template_path = state.bundled_template_dir() .. "/nih-r01.tex"
+  local parent = "/tmp/nih-scaffold/main.tex"
+  local written = {}
+
+  new_buffer()
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return ""
+    end,
+    [{ vim.fn, "filereadable" }] = function(_path)
+      return 0
+    end,
+  }, function()
+    scaffold.insert_scaffold_template(template_path)
+  end)
+
+  new_buffer()
+  with_stubs({
+    [{ vim.api, "nvim_buf_get_name" }] = function(_buf)
+      return parent
+    end,
+    [{ vim.fn, "filereadable" }] = function(path)
+      if path == parent or path == template_path then
+        return 1
+      end
+      if path:find("/nih%-r01/", 1) and path:sub(-4) == ".tex" then
+        return 1
+      end
+      if path:sub(-#"refs.bib") == "refs.bib" and path:find("nih%-r01", 1) then
+        return 1
+      end
+      -- Project destinations do not exist yet.
+      return 0
+    end,
+    [{ vim.fn, "isdirectory" }] = function(path)
+      if path:find("nih%-r01", 1) then
+        return 1
+      end
+      return 0
+    end,
+    [{ vim.fn, "readfile" }] = function(path)
+      if path == template_path then
+        return {
+          "% latex-tools: scaffold",
+          "% latex-tools: scaffold-dir=nih-r01",
+          "\\documentclass{article}",
+          "\\begin{document}",
+          "\\input{sections/cover}",
+          "\\end{document}",
+        }
+      end
+      if path:find("/sections/", 1) then
+        return { "% section body" }
+      end
+      if path:sub(-#"refs.bib") == "refs.bib" then
+        return { "% bib" }
+      end
+      return {}
+    end,
+    [{ vim.fn, "writefile" }] = function(lines, path)
+      written[path] = lines
+      return 0
+    end,
+    [{ vim.fn, "mkdir" }] = function(_path, _flags)
+      return 0
+    end,
+    [{ util, "list_tex_files" }] = function(directory, _recursive)
+      if directory:find("/sections", 1) then
+        return {
+          directory .. "/cover.tex",
+          directory .. "/specific-aims.tex",
+        }
+      end
+      return {}
+    end,
+  }, function()
+    scaffold.insert_scaffold_template(template_path)
+  end)
+
+  local lines = get_buffer_lines()
+  assert_contains(lines, "\\input{sections/cover}")
+  assert_true(written["/tmp/nih-scaffold/sections/cover.tex"] ~= nil, "Expected cover.tex to be written")
+  assert_true(
+    written["/tmp/nih-scaffold/sections/specific-aims.tex"] ~= nil,
+    "Expected specific-aims.tex to be written"
+  )
+  assert_true(written["/tmp/nih-scaffold/refs.bib"] ~= nil, "Expected refs.bib to be written")
+end)
+
 run_test("assignment flow rejects invalid due dates", function()
   new_buffer()
   local due_prompts = 0
@@ -1092,19 +1190,19 @@ end)
 
 run_test("built-in code snippets use short fence environments", function()
   new_buffer()
-  templates.insert_snippet("p")
+  templates.insert_fence_env("python")
   local lines = get_buffer_lines()
   assert_contains(lines, "\\begin{python}")
   assert_contains(lines, "\\end{python}")
 
   new_buffer()
-  templates.insert_snippet("m")
+  templates.insert_fence_env("markdown")
   lines = get_buffer_lines()
   assert_contains(lines, "\\begin{markdown}")
   assert_contains(lines, "\\end{markdown}")
 
   new_buffer()
-  templates.insert_snippet("l")
+  templates.insert_fence_env("plaintext")
   lines = get_buffer_lines()
   assert_contains(lines, "\\begin{plaintext}")
   assert_contains(lines, "\\end{plaintext}")

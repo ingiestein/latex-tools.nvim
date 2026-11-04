@@ -1,0 +1,81 @@
+% latex-tools: scaffold
+% latex-tools: scaffold-dir=nih-r01
+% Adapted from Noble Lab nih-latex (MIT): https://github.com/Noble-Lab/nih-latex
+% Selecting this template writes sections/ beside the saved parent and fills this buffer.
+
+\documentclass[12pt]{article}
+\usepackage[sort&compress]{natbib}
+\usepackage[yyyymmdd,hhmmss]{datetime}
+\usepackage[hidelinks]{hyperref}
+
+% Use Helvetica font.
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% Use 1/2-inch margins.
+\usepackage[margin=0.5in]{geometry}
+
+% No page numbers.
+\pagestyle{empty}
+
+% Allow wrapping of text around figures.
+\usepackage{wrapfig}
+\usepackage{url}
+
+% A space-saving version of \paragraph.
+\newcommand{\myparagraph}[1]{\vspace{0.5ex}\noindent{\bf #1} ~~}
+
+% Make captions have small font.
+\usepackage[font=scriptsize]{caption}
+
+\newcommand{\instructions}[1]{}
+% Before submitting, comment out this line.
+\renewcommand{\instructions}[1]{{\scriptsize \sc #1}}
+
+\usepackage{xcolor}
+\newcommand{\fixme}[1]{}
+\renewcommand{\fixme}[1]{{\color{red} {#1}}\color{black}}
+
+% Rotate 45 degrees.
+\usepackage{rotating}
+\newcommand{\rdg}[1]{\begin{rotate}{45} #1 \end{rotate}}
+
+% Display a checkmark.
+\usepackage{amssymb}
+\newcommand{\vv}{\checkmark}
+
+% Compact titles.
+\usepackage[compact]{titlesec}
+
+% Compacted lists. Use itemize* or enumerate* for compact version.
+\usepackage{mdwlist}
+
+% Reduce space after figures.
+\setlength{\belowcaptionskip}{-10pt}
+
+\usepackage{authblk} % Better formatting of author list.
+
+% The title has an 81-character maximum.
+\title{INSERT TITLE HERE}
+
+\author[1]{My name}
+
+\affil[1]{My affiliation}
+
+\date{}
+
+\begin{document}
+
+\input{sections/cover}
+\input{sections/phs-assignment}
+\input{sections/project-summary}
+\input{sections/project-narrative}
+\input{sections/specific-aims}
+\input{sections/research-strategy}
+\input{sections/bibliography}
+\input{sections/resource-sharing}
+\input{sections/equipment}
+\input{sections/budget-justification}
+\input{sections/resources}
+
+\end{document}

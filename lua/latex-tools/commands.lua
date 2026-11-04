@@ -101,10 +101,10 @@ function M.open_menu()
       require("latex-tools").pick_code_fence()
     end },
     { label = "Insert: Markdown fence", run = function()
-      require("latex-tools").insert_snippet("m")
+      require("latex-tools").insert_fence_env("markdown")
     end },
     { label = "Insert: Plain text fence", run = function()
-      require("latex-tools").insert_snippet("l")
+      require("latex-tools").insert_fence_env("plaintext")
     end },
     { label = "Report: Cited keys vs .bib (read-only)", run = function()
       require("latex-tools").report_cited_keys()

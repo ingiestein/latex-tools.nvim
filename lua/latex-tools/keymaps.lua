@@ -57,29 +57,29 @@ function M.setup(opts)
     lt().insert_table_from_csv()
   end, "Table from CSV")
 
-  -- Code fences \tc* (rich samples for p/r/s/m/l; catalog for the rest)
+  -- Code fences \tc*
   map(prefix .. "cf", function()
     lt().pick_code_fence()
   end, "Code Fence Language Picker")
 
   map(prefix .. "cp", function()
-    lt().insert_snippet("p")
+    lt().insert_fence_env("python")
   end, "Python Fence")
 
   map(prefix .. "cr", function()
-    lt().insert_snippet("r")
+    lt().insert_fence_env("rcode")
   end, "R Fence")
 
   map(prefix .. "cs", function()
-    lt().insert_snippet("s")
+    lt().insert_fence_env("sql")
   end, "SQL Fence")
 
   map(prefix .. "cm", function()
-    lt().insert_snippet("m")
+    lt().insert_fence_env("markdown")
   end, "Markdown Fence")
 
   map(prefix .. "cl", function()
-    lt().insert_snippet("l")
+    lt().insert_fence_env("plaintext")
   end, "Plain Text Fence")
 
   map(prefix .. "cj", function()

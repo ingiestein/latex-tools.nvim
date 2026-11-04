@@ -271,6 +271,11 @@ function M.is_course_aware_template(path)
   return metadata.type == "course-aware"
 end
 
+function M.is_scaffold_template(path)
+  local metadata = M.parse_template_metadata(path)
+  return metadata.type == "scaffold"
+end
+
 function M.insert_template_lines(lines)
   local buf = vim.api.nvim_get_current_buf()
   local existing = vim.api.nvim_buf_get_lines(buf, 0, -1, false)

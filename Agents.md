@@ -11,13 +11,14 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - `config.lua` — User options (keymaps, commands, path overrides); warns on `python_script_path` override
   - `state.lua` — Path resolution, user-file bootstrapping, `run_command()` with sanitized errors
   - `templates.lua` — Document template discovery, `% latex-tools:` metadata parsing, unified picker
+  - `scaffold.lua` — Multi-file scaffold insert (`% latex-tools: scaffold`); copies `sections/` beside a saved parent
   - `subfiles.lua` — Subfile chapter creation from saved course-aware parent buffers
   - `assignment.lua` — Course picker + Python-driven rendering for course-aware templates
   - `figures.lua` / `tables.lua` — Interactive snippet builders (UI select + input)
   - `references.lua` — Label/`\ref` picker, BibTeX/biblatex cite picker, cited-keys report
   - `math.lua` — Equation/align and theorem-style environment inserts
   - `code_fences.lua` — Toggle listings vs minted companion `\input` (`:LatexToolsUseMinted[!]`)
-  - `snippets.lua` — Fence catalog + short-key inserts (`p`/`r`/`s`/`m`/`l`) and `pick_code_fence()` language picker
+  - `snippets.lua` — Curated fence catalog; `insert_fence_env` / `pick_code_fence`
   - `tex_snippets.lua` — Recursive picker for user-managed `.tex` snippet files
   - `util.lua` — Shared helpers (insertion, escaping, CSV parsing, slugify, file listing, date validation, message sanitization, template metadata)
   - `commands.lua` — `:LatexTools*` user commands + confirm gate for Refresh + `:LatexTools` menu
@@ -59,6 +60,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
   - Subfiles: created via `:LatexToolsSubfile` / `\tS` from a saved buffer containing `% latex-tools: course-aware`; writes `subfile/<name>.tex` beside the parent and opens it in a right split
   - Snippets: partial blocks in `snippets/**/*.tex`; inserted via `:LatexToolsSnippet` / `\tx`
   - Mark course-aware templates with `% latex-tools: course-aware` in the first ~20 lines; `subfile.tex`, `latex-tools-code.tex`, and `latex-tools-code-minted.tex` are excluded from the template picker
+  - Mark multi-file scaffolds with `% latex-tools: scaffold` and `% latex-tools: scaffold-dir=<name>`; payload lives in `templates/<name>/` (e.g. bundled NIH R01). Insert requires a saved buffer; never overwrites existing project `sections/` files
   - Fence API: `\begin{mdcode}{Lang}` plus curated wrappers (`python`, `rcode`, `sql`, `markdown`, `plaintext`, `javascript`, `typescript`, `java`, `ccode`, `cpp`, `csharp`, `rust`, `json`, `go`, `bash`; listings default; minted opt-in). Prefer wrappers when listings has no lexer. Code inserts nest under `\tc*` (`\tcf` / `:LatexToolsCodeFence` for picker).
 - **Insertion**: Prefer `util.insert_lines_at_cursor()` for blocks, `util.insert_inline_text_at_cursor()` for inline, `util.insert_template_lines()` for full documents.
 - **Escaping**: Always use `util.escape_latex_text()` (or Python equivalent) for user content.
@@ -86,6 +88,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 - User-only: user drops file in `latex-tools/templates/`.
 - Static templates need no code changes.
 - Course-aware templates: add `% latex-tools: course-aware` near the top and ensure Python `render_template()` can fill the template's `\newcommand` placeholders.
+- Scaffold templates: add `% latex-tools: scaffold` (+ optional `scaffold-dir=…`), put section payloads under `templates/<dir>/sections/`, and ensure Install/Refresh copies that directory tree.
 
 **Change template rendering**
 - Edit `templates/assignment.tex` (commands like `\newcommand{\AssignmentTitle}{...}`).
@@ -103,7 +106,7 @@ This Neovim plugin accelerates LaTeX authoring for school assignments. Core valu
 **Custom `.tex` snippets**
 - Store user snippets under `state.get_paths().custom_snippets_dir`; the default is `stdpath("config")/latex-tools/snippets`.
 - `tex_snippets.lua` discovers `.tex` files recursively via `util.list_tex_files(directory, true)`, displays paths relative to the snippets directory, and inserts with `util.insert_lines_at_cursor()`.
-- Keep built-in fence shortcuts in `snippets.lua` (`p`/`r`/`s`/`m`/`l`), `insert_fence_env`, and `pick_code_fence()`; keymaps nest under `\tc*`. `\tx` is reserved for user-managed file snippets.
+- Keep the curated fence catalog in `snippets.lua` (`insert_fence_env` / `pick_code_fence`); keymaps nest under `\tc*`. `\tx` is reserved for user-managed file snippets.
 
 **Change initialization behavior**
 - Bootstrapping logic lives in `state.lua` (`initialize_course_metadata`, `initialize_user_templates`, `initialize_custom_snippets_dir`).

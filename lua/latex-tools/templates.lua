@@ -1,4 +1,5 @@
 local assignment = require("latex-tools.assignment")
+local scaffold = require("latex-tools.scaffold")
 local state = require("latex-tools.state")
 local util = require("latex-tools.util")
 
@@ -14,6 +15,9 @@ local function template_label(name, path)
   if util.is_course_aware_template(path) then
     return name .. " (course-aware)"
   end
+  if util.is_scaffold_template(path) then
+    return name .. " (scaffold)"
+  end
   return name
 end
 
@@ -24,6 +28,7 @@ function M.describe_template(path)
     path = path,
     label = template_label(name, path),
     course_aware = util.is_course_aware_template(path),
+    scaffold = util.is_scaffold_template(path),
   }
 end
 
@@ -89,6 +94,11 @@ function M.insert_template()
 
     if choice.course_aware then
       assignment.insert_assignment_template(choice.path)
+      return
+    end
+
+    if choice.scaffold then
+      scaffold.insert_scaffold_template(choice.path)
       return
     end
 

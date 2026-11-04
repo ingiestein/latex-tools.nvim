@@ -2,47 +2,45 @@ local util = require("latex-tools.util")
 
 local M = {}
 
--- Rich sample bodies for frequent languages (\tcp / \tcr / \tcs / \tcm / \tcl)
-local snippets = {
-  p = {
-    "\\begin{python}",
-    "import pandas as pd",
-    "from sklearn.model_selection import train_test_split",
-    "\\end{python}",
-  },
-  r = {
-    "\\begin{rcode}",
-    "summary(df)",
-    "\\end{rcode}",
-  },
-  s = {
-    "\\begin{sql}",
-    "SELECT patient_id, encounter_date",
-    "FROM encounters",
-    "WHERE diagnosis_code = 'I10';",
-    "\\end{sql}",
-  },
-  m = {
-    "\\begin{markdown}",
-    "# Heading",
-    "",
-    "Paragraph with **bold** and `code`.",
-    "\\end{markdown}",
-  },
-  l = {
-    "\\begin{plaintext}",
-    "Plain text or log output.",
-    "\\end{plaintext}",
-  },
-}
-
--- Catalog for :LatexToolsCodeFence / \tcf and insert_fence_env
+-- Curated fences for keymaps, :LatexToolsCodeFence, and insert_fence_env.
+-- `body` = lines inside the env; omit for a one-line `placeholder`.
 local fence_catalog = {
-  { label = "Python", env = "python", placeholder = "# code" },
-  { label = "R", env = "rcode", placeholder = "# code" },
-  { label = "SQL", env = "sql", placeholder = "-- query" },
-  { label = "Markdown", env = "markdown", placeholder = "# Heading" },
-  { label = "Plain text", env = "plaintext", placeholder = "text" },
+  {
+    label = "Python",
+    env = "python",
+    body = {
+      "import pandas as pd",
+      "from sklearn.model_selection import train_test_split",
+    },
+  },
+  {
+    label = "R",
+    env = "rcode",
+    body = { "summary(df)" },
+  },
+  {
+    label = "SQL",
+    env = "sql",
+    body = {
+      "SELECT patient_id, encounter_date",
+      "FROM encounters",
+      "WHERE diagnosis_code = 'I10';",
+    },
+  },
+  {
+    label = "Markdown",
+    env = "markdown",
+    body = {
+      "# Heading",
+      "",
+      "Paragraph with **bold** and `code`.",
+    },
+  },
+  {
+    label = "Plain text",
+    env = "plaintext",
+    body = { "Plain text or log output." },
+  },
   { label = "JavaScript", env = "javascript", placeholder = "// code" },
   { label = "TypeScript", env = "typescript", placeholder = "// code" },
   { label = "Java", env = "java", placeholder = "// code" },
@@ -55,12 +53,17 @@ local fence_catalog = {
   { label = "Bash", env = "bash", placeholder = "# code" },
 }
 
-local function fence_lines(env, placeholder)
-  return {
-    "\\begin{" .. env .. "}",
-    placeholder,
-    "\\end{" .. env .. "}",
-  }
+local function fence_lines(item)
+  local lines = { "\\begin{" .. item.env .. "}" }
+  if item.body then
+    for _, line in ipairs(item.body) do
+      lines[#lines + 1] = line
+    end
+  else
+    lines[#lines + 1] = item.placeholder or ""
+  end
+  lines[#lines + 1] = "\\end{" .. item.env .. "}"
+  return lines
 end
 
 local function find_fence(env)
@@ -72,22 +75,13 @@ local function find_fence(env)
   return nil
 end
 
-function M.insert_snippet(snippet_key)
-  local snippet = snippets[snippet_key]
-  if not snippet then
-    vim.notify("Unknown snippet key: " .. tostring(snippet_key), vim.log.levels.WARN)
-    return
-  end
-  util.insert_lines_at_cursor(snippet)
-end
-
 function M.insert_fence_env(env)
   local item = find_fence(env)
   if not item then
     vim.notify("Unknown code fence env: " .. tostring(env), vim.log.levels.WARN)
     return
   end
-  util.insert_lines_at_cursor(fence_lines(item.env, item.placeholder))
+  util.insert_lines_at_cursor(fence_lines(item))
 end
 
 function M.pick_code_fence()
@@ -100,7 +94,7 @@ function M.pick_code_fence()
     if not choice then
       return
     end
-    util.insert_lines_at_cursor(fence_lines(choice.env, choice.placeholder))
+    util.insert_lines_at_cursor(fence_lines(choice))
   end)
 end
 

@@ -114,6 +114,11 @@ function M.get_paths()
   return vim.tbl_deep_extend("force", defaults, path_overrides)
 end
 
+--- Bundled plugin templates/ directory (ignores path overrides).
+function M.bundled_template_dir()
+  return default_paths().template_dir
+end
+
 function M.get_python_cmd()
   local ok, config = pcall(require, "latex-tools.config")
   if ok then
@@ -169,6 +174,86 @@ end
 
 function M.get_user_metadata_backup_root()
   return user_metadata_backup_root()
+end
+
+local function list_scaffold_payload_dirs(bundled_dir)
+  local dirs = {}
+  local seen = {}
+  for _, tex in ipairs(vim.fn.glob(bundled_dir .. "/*.tex", false, true)) do
+    local metadata = util.parse_template_metadata(tex)
+    if metadata.type == "scaffold" then
+      local dirname = metadata["scaffold-dir"] or vim.fn.fnamemodify(tex, ":t:r")
+      local path = bundled_dir .. "/" .. dirname
+      if not seen[dirname] and vim.fn.isdirectory(path) == 1 then
+        seen[dirname] = true
+        table.insert(dirs, { name = dirname, path = path })
+      end
+    end
+  end
+  table.sort(dirs, function(a, b)
+    return a.name < b.name
+  end)
+  return dirs
+end
+
+local function list_files_recursive(directory)
+  local matches = vim.fn.glob(directory .. "/**/*", false, true)
+  local files = {}
+  for _, path in ipairs(matches) do
+    if vim.fn.filereadable(path) == 1 then
+      table.insert(files, path)
+    end
+  end
+  table.sort(files)
+  return files
+end
+
+local function copy_scaffold_payload(source_dir, destination_dir, opts)
+  local options = opts or {}
+  local created = 0
+  local skipped = 0
+  local failed = 0
+  local backed_up = {}
+
+  if options.force and vim.fn.isdirectory(destination_dir) == 1 then
+    if not options.backup_dir then
+      return nil, "missing-backup-dir"
+    end
+    local relocated = relocate_to_backup(destination_dir, options.backup_dir)
+    if not relocated then
+      return nil, "backup-failed"
+    end
+    table.insert(backed_up, relocated)
+  end
+
+  for _, source in ipairs(list_files_recursive(source_dir)) do
+    local rel = source:sub(#source_dir + 2)
+    local destination = destination_dir .. "/" .. rel
+    local result, status = copy_bundled_file({
+      source = source,
+      destination = destination,
+      force = false,
+      label = rel,
+      quiet = true,
+    })
+    if status == "created" then
+      created = created + 1
+    elseif status == "skipped" then
+      skipped = skipped + 1
+    else
+      failed = failed + 1
+    end
+    if result then
+      -- counted above
+    end
+  end
+
+  return {
+    created = created,
+    skipped = skipped,
+    failed = failed,
+    backed_up = backed_up,
+  }
 end
 
 function M.initialize_user_templates(opts)
@@ -228,6 +313,28 @@ function M.initialize_user_templates(opts)
         skipped = skipped + 1
       else
         failed = failed + 1
+      end
+    end
+  end
+
+  for _, scaffold in ipairs(list_scaffold_payload_dirs(bundled_dir)) do
+    local dest_scaffold = destination_dir .. "/" .. scaffold.name
+    if options.force and vim.fn.isdirectory(dest_scaffold) == 1 and not backup_dir then
+      backup_dir = new_templates_backup_dir()
+    end
+    local payload = copy_scaffold_payload(scaffold.path, dest_scaffold, {
+      force = options.force,
+      backup_dir = backup_dir,
+    })
+    if not payload then
+      failed = failed + 1
+      vim.notify("Unable to refresh scaffold payload " .. scaffold.name, vim.log.levels.ERROR)
+    else
+      created = created + payload.created
+      skipped = skipped + payload.skipped
+      failed = failed + payload.failed
+      for _, path in ipairs(payload.backed_up) do
+        table.insert(backed_up, path)
       end
     end
   end

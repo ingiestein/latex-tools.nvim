@@ -33,10 +33,6 @@ function M.get_config()
   return config.get()
 end
 
-function M.insert_snippet(snippet_key)
-  return snippets.insert_snippet(snippet_key)
-end
-
 function M.insert_fence_env(env)
   return snippets.insert_fence_env(env)
 end

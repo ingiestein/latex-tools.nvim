@@ -2,7 +2,9 @@
 
 ## Unreleased
 
+- Added NIH R01 grant **scaffold** template (`nih-r01.tex` + `nih-r01/sections/`), adapted from Noble Lab [nih-latex](https://github.com/Noble-Lab/nih-latex) (MIT). Selecting it inserts a preamble parent with `\\input{sections/...}` and writes editable section files beside the saved buffer.
 - **Breaking:** regrouped keymaps under nested chords (figures `\tf*`, tables `\tb*`, code `\tc*`, refs `\tr*`, math `\tm*`). See README migration table. Old flat keys (`\tf`, `\tp`, `\tk`, …) are removed.
+- Unified fence inserts on `insert_fence_env` / `pick_code_fence` (removed letter-keyed `insert_snippet`).
 - Added a unified document template picker through `:LatexToolsTemplate` and `\\ta`.
 - Changed subfile workflow: use `:LatexToolsSubfile` / `\\tS` from a saved course-aware parent document instead of inserting `subfile.tex` into a blank buffer.
 - Fixed subfile include insertion to use the pre-prompt cursor line so `\\subfile{...}` lands where the user invoked the command.

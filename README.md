@@ -178,6 +178,31 @@ From a **saved** course-aware parent document (with `% latex-tools: course-aware
 
 The picker will run the course/title/due-date flow and render it with `courses.yaml` metadata. No plugin code changes are required for new static templates.
 
+**Add a scaffold template** (multi-file project) — mark the parent and point at a sibling payload directory:
+
+```tex
+% latex-tools: scaffold
+% latex-tools: scaffold-dir=nih-r01
+```
+
+Selecting it requires a **saved** buffer. The parent content is inserted into the buffer, and missing files under `sections/` (plus optional `refs.bib`) are copied beside the parent from the payload directory. Existing project files are never overwritten.
+
+### Bundled NIH R01 grant scaffold
+
+`nih-r01.tex` is adapted from [Noble Lab nih-latex](https://github.com/Noble-Lab/nih-latex) (MIT). Pick it from `:LatexToolsTemplate` / `\ta` after saving your parent (e.g. `main.tex`). That writes:
+
+```text
+main.tex                 # preamble + \input{sections/...}
+sections/
+  cover.tex
+  phs-assignment.tex
+  project-summary.tex
+  …
+refs.bib                 # empty starter for natbib
+```
+
+Install/Refresh also copies the `nih-r01/` payload into your user template library so the scaffold stays available offline.
+
 Bundled templates live in the plugin's `templates/` directory. User copies in `latex-tools/templates/` override bundled files by filename. A legacy `latex-tools/assignment.tex` path is still honored if you have not migrated yet.
 
 `subfile.tex` and `latex-tools-code.tex` are bundled helpers excluded from the document template picker.
@@ -522,8 +547,7 @@ Backward-compatible aliases: `init_course_metadata`, `init_user_templates`, `ini
 - `require("latex-tools").insert_equation_snippet()`
 - `require("latex-tools").insert_theorem_snippet()`
 - `require("latex-tools").insert_table_from_csv()`
-- `require("latex-tools").insert_snippet(key)` — `p`, `r`, `s`, `m`, or `l`
-- `require("latex-tools").insert_fence_env(env)` — insert a curated fence by env name (e.g. `json`, `ccode`)
+- `require("latex-tools").insert_fence_env(env)` — insert a curated fence by env name (e.g. `python`, `json`, `ccode`)
 - `require("latex-tools").pick_code_fence()` — language picker for all curated fence wrappers
 
 ### Testing
